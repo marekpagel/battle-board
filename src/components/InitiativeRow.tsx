@@ -406,7 +406,7 @@ export default function InitiativeRow({
                                     </Typography>
                                 </Typography>
                             )}
-                            {row.tempHP !== 0 && <HPButtons id={row.id} temporary />}
+                            <HPButtons id={row.id} temporary increments={row.tempHP === 0 ? [1] : undefined} />
                         </TableCell>
                     </>
                 )}

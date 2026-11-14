@@ -30,7 +30,7 @@ export function createFakeScene(initial: { items?: Item[]; sceneMetadata?: Metad
         }
     };
     /** Every write applied to the scene, in order. Lets tests count round-trips. */
-    const writes: { kind: "items.update" | "items.add" | "items.delete" | "sceneMetadata" | "roomMetadata"; ids?: string[] }[] = [];
+    const writes: { kind: "items.update" | "items.add" | "items.delete" | "localItems.add" | "localItems.update" | "localItems.delete" | "sceneMetadata" | "roomMetadata"; ids?: string[] }[] = [];
 
     const emit = <T>(listeners: Set<(v: T) => void>, value: () => T) => {
         queueMicrotask(() => listeners.forEach((l) => l(value())));
@@ -55,6 +55,9 @@ export function createFakeScene(initial: { items?: Item[]; sceneMetadata?: Metad
 
     function portFor(client: Client): ObrPort {
         const { role } = client;
+        let localItems: Item[] = [];
+        const localListeners = new Set<(items: Item[]) => void>();
+        const emitLocal = () => emit(localListeners, () => clone(localItems));
 
         return {
             items: {
@@ -83,6 +86,28 @@ export function createFakeScene(initial: { items?: Item[]; sceneMetadata?: Metad
                     emitItems();
                 },
                 onChange: (cb) => subscribe(itemListeners, cb),
+            },
+            localItems: {
+                async get(ids) { return clone(ids ? localItems.filter((i) => ids.includes(i.id)) : localItems); },
+                async update(ids, update) {
+                    const drafts = clone(localItems.filter((i) => ids.includes(i.id)));
+                    update(drafts);
+                    const byId = new Map(drafts.map((i) => [i.id, i]));
+                    localItems = localItems.map((i) => byId.get(i.id) ?? i);
+                    writes.push({ kind: "localItems.update", ids });
+                    emitLocal();
+                },
+                async add(added) {
+                    localItems = [...localItems, ...clone(added)];
+                    writes.push({ kind: "localItems.add", ids: added.map((i) => i.id) });
+                    emitLocal();
+                },
+                async delete(ids) {
+                    localItems = localItems.filter((i) => !ids.includes(i.id));
+                    writes.push({ kind: "localItems.delete", ids });
+                    emitLocal();
+                },
+                onChange: (cb) => subscribe(localListeners, cb),
             },
             sceneMetadata: {
                 get: async () => clone(sceneMetadata),

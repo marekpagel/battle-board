@@ -15,6 +15,13 @@ export const obrAdapter: ObrPort = {
         delete: (ids) => OBR.scene.items.deleteItems(ids),
         onChange: (callback) => OBR.scene.items.onChange(callback),
     },
+    localItems: {
+        get: (ids) => ids ? OBR.scene.local.getItems(ids) : OBR.scene.local.getItems(),
+        update: (ids, update) => OBR.scene.local.updateItems(ids, update as SdkItemUpdate),
+        add: (items) => OBR.scene.local.addItems(items),
+        delete: (ids) => OBR.scene.local.deleteItems(ids),
+        onChange: (callback) => OBR.scene.local.onChange(callback),
+    },
     sceneMetadata: {
         get: () => OBR.scene.getMetadata(),
         set: (patch) => OBR.scene.setMetadata(patch),

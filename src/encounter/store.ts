@@ -93,12 +93,12 @@ export function createEncounterStore(port: ObrPort) {
     }
 
     /** Apply health rules to fresh state and announce checks only after the write succeeds. */
-    function changeHP(id: string, calculate: (combatant: Combatant, started: boolean) => HealthChange) {
+    function changeHP(id: string, calculate: (combatant: Combatant) => HealthChange) {
         return exclusive(async () => {
-            const { combatants, started } = await turnSnapshot();
+            const { combatants } = await snapshot();
             const combatant = combatants.find((c) => c.id === id);
             if (!combatant) return;
-            const { patch, concentrationCheck } = calculate(combatant, started);
+            const { patch, concentrationCheck } = calculate(combatant);
             await port.items.update([id], (items) => {
                 for (const item of items) {
                     const meta = savedMeta(item);
@@ -331,8 +331,8 @@ export function createEncounterStore(port: ObrPort) {
 
         /** Commit typed HP using the same rules and write path as button adjustments. */
         setHP: (id: string, value: number, field: "current" | "temp" | "max" = "current") =>
-            changeHP(id, (combatant, started) => {
-                if (field === "max") return setMax(combatant, value, { inCombat: started });
+            changeHP(id, (combatant) => {
+                if (field === "max") return setMax(value);
                 return field === "temp" ? setTemp(combatant, value) : setCurrent(combatant, value);
             }),
 

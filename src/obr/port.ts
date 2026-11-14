@@ -12,6 +12,8 @@ import type { GridMeasurement, Item, Metadata, Vector2 } from "@owlbear-rodeo/sd
  */
 export interface ObrPort {
     items: ItemsPort;
+    /** Temporary items visible only to this client. */
+    localItems: ItemsPort;
     sceneMetadata: MetadataPort;
     roomMetadata: MetadataPort;
     broadcast: BroadcastPort;

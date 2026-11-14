@@ -1,3 +1,4 @@
+import { getPluginId } from "../getPluginId";
 import { META_KEY } from "../components/metadata";
 import { SCENE_META_KEY } from "../encounter/store";
 import type { ObrPort } from "../obr/port";
@@ -11,6 +12,7 @@ export async function runSavedDataMigrations(port: ObrPort) {
     if ((await port.player.getRole()) !== "GM") return;
     await moveSceneSettingsToRoom(port);
     await moveSceneGroupsToTokens(port);
+    await removeRetiredHealthMarkers(port);
 }
 
 /** Settings used to live in each scene; the room now holds them. */
@@ -60,4 +62,14 @@ async function moveSceneGroupsToTokens(port: ObrPort) {
     delete rest.groups;
     delete rest.encounters;
     await port.sceneMetadata.set({ [SCENE_META_KEY]: rest });
+}
+
+
+/** Retire the shared emoji badges now replaced by viewer-specific health overlays. */
+async function removeRetiredHealthMarkers(port: ObrPort) {
+    const key = getPluginId("health-marker");
+    const ids = (await port.items.get())
+        .filter((item) => item.id.startsWith(`${key}.`) || item.metadata[key])
+        .map((item) => item.id);
+    if (ids.length) await port.items.delete(ids);
 }

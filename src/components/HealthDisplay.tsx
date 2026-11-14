@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import type { Combatant } from "../encounter";
 import type { HealthMode } from "../settings";
-import { healthFraction, showsBar, status } from "../encounter/health";
+import { healthColor, healthFraction, showsBar, status, statusColorKey } from "../encounter/health";
 
 type Props = {
     row: Combatant;
@@ -15,9 +15,7 @@ export function HealthDisplay({ row, mode, variant = "compact" }: Props) {
     if (mode === "none") return null;
 
     const statusText = status(row);
-    const color = statusText === "Dead" || statusText === "Dying"
-        ? "error.main"
-        : statusText === "Bloodied" ? "warning.main" : "success.main";
+    const color = `${statusColorKey(statusText)}.main`;
     const fontSize = variant === "compact" ? "0.75rem" : "0.8rem";
 
     if (mode === "status") {
@@ -88,9 +86,4 @@ export function HealthBar({ row, sx }: { row: Pick<Combatant, "currentHP" | "max
             )}
         </Box>
     );
-}
-
-/** Hue slides from green (120°) at full health through yellow to red (0°) at 0. */
-function healthColor(fraction: number): string {
-    return `hsl(${Math.round(fraction * 120)}, 70%, 45%)`;
 }

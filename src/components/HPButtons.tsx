@@ -2,9 +2,9 @@ import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import { encounterStore } from "../encounter";
 
-export function HPButtons({ id, temporary = false }: { id: string; temporary?: boolean }) {
+export function HPButtons({ id, temporary = false, increments = [-5, -1, 1, 5] }: { id: string; temporary?: boolean; increments?: number[] }) {
     return <Stack direction="row" justifyContent="center" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-        {[-5, -1, 1, 5].map((delta) => (
+        {increments.map((delta) => (
             <Button key={delta} size="small" variant="text"
                 aria-label={`${delta < 0 ? "Decrease" : "Increase"} ${temporary ? "temporary HP" : "HP"} by ${Math.abs(delta)}`}
                 onClick={() => encounterStore.adjustHP(id, delta, temporary ? "temp" : "current").catch(console.error)}

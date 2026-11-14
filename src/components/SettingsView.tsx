@@ -387,7 +387,7 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                                 <Box sx={{ position: "relative" }}>
                                     <RowShell
                                         title="Health Status"
-                                        description="Allow player health info."
+                                        description="Player health in the list and on the map."
                                         right={
                                             <Toggle
                                                 checked={!!value.displayHealthStatusToPlayer}

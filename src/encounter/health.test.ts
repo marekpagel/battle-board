@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { concentrationAudience, healthFraction, playerCanEditHP, playerHealthMode, setCurrent, setMax, setTemp, showPlayerHealthColumn, status } from "./health";
+import { healthColor, concentrationAudience, healthFraction, playerCanEditHP, playerHealthMode, setCurrent, setMax, setTemp, showPlayerHealthColumn, status } from "./health";
 
 const hp = (currentHP: number, maxHP: number, tempHP = 0, concentrating = false) => ({ currentHP, maxHP, tempHP, concentrating });
 
@@ -50,14 +50,17 @@ describe("concentration checks", () => {
 });
 
 describe("max HP", () => {
-    it("before combat, current HP moves with max HP", () => {
-        expect(setMax(hp(30, 30), 45, { inCombat: false }).patch).toEqual({ maxHP: 45, currentHP: 45 });
-        expect(setMax(hp(10, 30), 20, { inCombat: false }).patch).toEqual({ maxHP: 20, currentHP: 0 });
+    it("sets current HP to match the new maximum", () => {
+        expect(setMax(45).patch).toEqual({ maxHP: 45, currentHP: 45 });
+        expect(setMax(20).patch).toEqual({ maxHP: 20, currentHP: 20 });
     });
 
-    it("during combat, current HP is only clamped", () => {
-        expect(setMax(hp(30, 30), 45, { inCombat: true }).patch).toEqual({ maxHP: 45 });
-        expect(setMax(hp(30, 30), 20, { inCombat: true }).patch).toEqual({ maxHP: 20, currentHP: 20 });
+    it("clamps the new maximum and current HP to zero", () => {
+        expect(setMax(-5).patch).toEqual({ maxHP: 0, currentHP: 0 });
+    });
+
+    it("treats max HP edits as stat corrections without concentration checks", () => {
+        expect(setMax(0).concentrationCheck).toBeNull();
     });
 });
 
@@ -102,5 +105,14 @@ describe("what players see and edit", () => {
     it("hides the health column when neither faction is shown", () => {
         expect(showPlayerHealthColumn({ ...settings, pcHealthMode: "none", npcHealthMode: "none" })).toBe(false);
         expect(showPlayerHealthColumn(settings)).toBe(true);
+    });
+});
+
+
+describe("shared health colors", () => {
+    it.each([
+        [1, "#22c322"], [0.75, "#73c322"], [0.5, "#c3c322"], [0.25, "#c37322"], [0, "#c32222"],
+    ] as const)("colors %s health consistently for the tracker and map", (fraction, color) => {
+        expect(healthColor(fraction)).toBe(color);
     });
 });

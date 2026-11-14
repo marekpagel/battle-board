@@ -19,6 +19,8 @@ export function useResizeToOBR(minHeight = 250) {
     };
 
     useEffect(() => {
+        // Match the manifest width, including rooms that cached the old action size.
+        OBR.action.setWidth(600).catch(console.error);
         const el = rootRef.current;
 
         // If we don't have the element yet, or RO isn't supported, still try to size

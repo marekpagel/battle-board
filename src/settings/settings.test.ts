@@ -1,3 +1,4 @@
+import { getPluginId } from "../getPluginId";
 import { describe, expect, it } from "vitest";
 import { createFakeScene, flush } from "../obr/fakeScene";
 import { makeToken } from "../test/tokens";
@@ -80,6 +81,22 @@ describe("saved-data migrations", () => {
         const scene = createFakeScene({ sceneMetadata: legacyScene, roomMetadata: { [ROOM_META_KEY]: { showArmor: false } } });
         await runSavedDataMigrations(scene.connect("GM"));
         expect(scene.peek().roomMetadata[ROOM_META_KEY]).toEqual({ showArmor: false });
+    });
+
+    it("removes retired emoji markers without touching tokens or unrelated labels", async () => {
+        const key = getPluginId("health-marker");
+        const label = (id: string, metadata: Record<string, unknown> = {}) => ({ ...makeToken({ id, metadata }), type: "LABEL" });
+        const scene = createFakeScene({ items: [
+            grouped(), label(`${key}.a`), label("copied-marker", { [key]: { tokenId: "a" } }), label("manual-skull"),
+        ] });
+        await runSavedDataMigrations(scene.connect("PLAYER"));
+        expect(scene.writes).toEqual([]);
+        const gm = scene.connect("GM");
+        await runSavedDataMigrations(gm);
+        expect(scene.peek().items.map((i) => i.id)).toEqual(["a", "manual-skull"]);
+        const writes = scene.writes.length;
+        await runSavedDataMigrations(gm);
+        expect(scene.writes.length).toBe(writes);
     });
 
     it("do nothing on a player's client", async () => {

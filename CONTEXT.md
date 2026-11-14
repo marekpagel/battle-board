@@ -64,6 +64,9 @@ _Avoid_: Player character flag, hero
 Any combatant that is not a PC.
 _Avoid_: Monster, enemy
 
+**Max HP edit**:
+Changing max HP also sets current HP to that maximum, before or during an encounter. It leaves temp HP unchanged and counts as a stat correction rather than damage.
+
 **Damage taken**:
 The cumulative HP lost by an NPC in the encounter, including damage absorbed by temp HP. Players see this total beside its name regardless of health mode. Healing never subtracts from it, and max HP corrections do not count as damage. It resets when a new encounter starts; older tokens without a saved total start at 0.
 
@@ -102,8 +105,8 @@ The height of a token's bottom face above the map, in scene units; may be negati
 **Movement ring**:
 A circle around a combatant showing how far it can move this turn.
 
-**Health marker**:
-An automatic emoji-only map badge attached to a tracked token at 0 HP: Dead (☠) for an NPC, Unconscious (💤) for a PC. It follows token visibility and position, clears after healing, and remains when the combatant is removed from initiative. Like other derived map items, it updates while a GM's tracker is open.
+**Map health bar**:
+A compact overlay below each token with saved health data, including tokens outside initiative. The GM sees an HP bar, current/max HP, and temp HP. Players see their configured PC/NPC health mode, with no overlays when the master health switch is off. Bars are local to each viewer, update while the tracker is open, and disappear when it closes.
 
 **DM preview**:
 A ring visible only to the GM, toggled per combatant, independent of whose turn it is.

@@ -32,16 +32,10 @@ export function setTemp(c: HP, value: number): HealthChange {
     return change(c, { tempHP: Math.max(0, value), currentHP: Math.max(0, c.currentHP - overflow) });
 }
 
-/**
- * Set max HP. Before combat, current HP shifts by the same amount (so a
- * full-health creature stays full); during combat it is only clamped.
- */
-export function setMax(c: HP, value: number, opts: { inCombat: boolean }): HealthChange {
+/** A max HP edit refills current HP to match; stat corrections are not damage. */
+export function setMax(value: number): HealthChange {
     const maxHP = Math.max(0, value);
-    const currentHP = opts.inCombat
-        ? Math.min(c.currentHP, maxHP)
-        : clamp(c.currentHP + (maxHP - c.maxHP), 0, maxHP);
-    return change(c, currentHP === c.currentHP ? { maxHP } : { maxHP, currentHP });
+    return { patch: { maxHP, currentHP: maxHP }, concentrationCheck: null };
 }
 
 /** Any loss of total HP (temp + current) while concentrating needs a check: DC max(10, half the loss). */
@@ -60,6 +54,11 @@ export type HealthStatus = "Healthy" | "Bloodied" | "Dying" | "Dead";
 export function status(c: Pick<Combatant, "currentHP" | "maxHP" | "playerCharacter">): HealthStatus {
     if (c.currentHP === 0) return c.playerCharacter ? "Dying" : "Dead";
     return c.maxHP > 0 && c.currentHP < c.maxHP / 2 ? "Bloodied" : "Healthy";
+}
+
+/** Shared palette choice for health status in the tracker and on the map. */
+export function statusColorKey(value: HealthStatus): "error" | "warning" | "success" {
+    return value === "Dead" || value === "Dying" ? "error" : value === "Bloodied" ? "warning" : "success";
 }
 
 type HealthSettings = Pick<InitiativeSettings, "displayHealthStatusToPlayer" | "pcHealthMode" | "npcHealthMode" | "playerEditableHealth">;
@@ -95,6 +94,18 @@ export function playerCanEditHP(c: Pick<Combatant, "playerCharacter">, settings:
 export function healthFraction(c: Pick<Combatant, "currentHP" | "maxHP">): number | null {
     if (c.maxHP <= 0) return null;
     return clamp(c.currentHP / c.maxHP, 0, 1);
+}
+
+/** Shared green → yellow → red palette, matching HSL(hue, 70%, 45%).
+ * Hex output works in both CSS and Owlbear's native drawing styles.
+ */
+export function healthColor(fraction: number): string {
+    const hue = Math.round(clamp(fraction, 0, 1) * 120) / 60;
+    const saturation = 0.7, lightness = 0.45;
+    const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+    const offset = lightness - chroma / 2;
+    const rgb = [hue <= 1 ? chroma : chroma * (2 - hue), hue <= 1 ? chroma * hue : chroma, 0];
+    return `#${rgb.map((channel) => Math.round((channel + offset) * 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**

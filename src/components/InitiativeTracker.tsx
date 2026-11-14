@@ -20,7 +20,7 @@ import { registerInitiativeContextMenu } from "./initiativeMenu";
 import { useRingSync } from "../hooks/useRingSync";
 import { useDistanceLineSync } from "../hooks/useDistanceLineSync";
 import { useConcentrationNotifications } from "../hooks/useConcentrationNotifications";
-import { useHealthMarkers } from "../hooks/useHealthMarkers";
+import { useHealthBars } from "../hooks/useHealthBars";
 import { useElevationLabels } from "../hooks/useElevationLabels";
 import { useTurnEndSync } from "../hooks/useTurnEndSync";
 import { useTurnBarPopover } from "../turnbar/useTurnBarPopover";
@@ -52,7 +52,7 @@ export function InitiativeTracker() {
     useRingSync(ready);
     useDistanceLineSync(ready);
     useElevationLabels(ready);
-    useHealthMarkers(ready);
+    useHealthBars(ready, role);
     useTurnEndSync(ready);
     const { playerId } = usePlayerIdentity();
     useTurnBarPopover(role, playerId, settings);

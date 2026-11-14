@@ -359,14 +359,14 @@ describe("initiative rolls and HP taps", () => {
         ]);
     });
 
-    it("uses the encounter state at commit time for max HP edits", async () => {
+    it("sets current HP to max HP before and during an encounter", async () => {
         const { store, meta } = await setup([
             makeToken({ id: "a", metadata: saved({ currentHP: 10, maxHP: 10 }) }),
         ]);
         await store.setHP("a", 20, "max");
         expect(meta("a")).toMatchObject({ currentHP: 20, maxHP: 20 });
         await Promise.all([store.start(), store.setHP("a", 30, "max")]);
-        expect(meta("a")).toMatchObject({ currentHP: 20, maxHP: 30, damageTaken: 0 });
+        expect(meta("a")).toMatchObject({ currentHP: 30, maxHP: 30, damageTaken: 0 });
         await store.setHP("a", 15, "max");
         expect(meta("a")).toMatchObject({ currentHP: 15, maxHP: 15, damageTaken: 0 });
     });
