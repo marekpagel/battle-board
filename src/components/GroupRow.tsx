@@ -1,3 +1,4 @@
+import { InitiativeBonusField, InitiativeRollButton } from "./InitiativeControls";
 import { useMemo } from "react";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
@@ -24,7 +25,6 @@ import { GroupRowContextMenu } from "./GroupRowContextMenu";
 
 type RowSettings = {
     showMovementRange: boolean;
-    showAttackRange: boolean;
     showConditions: boolean;
     showDistances: boolean;
     showAC: boolean;
@@ -187,6 +187,7 @@ export default function GroupRow({
                             },
                         }}
                     />
+                    {!items.some((item) => item.playerCharacter) && <InitiativeRollButton id={group.id} initiative={group.initiative} group />}
                 </TableCell>
 
                 {/* GROUP NAME - spans multiple columns with buttons right-justified */}
@@ -281,6 +282,14 @@ export default function GroupRow({
                 onUngroup={handleUngroup}
             />
 
+            {expanded && (
+                <TableRow>
+                    <TableCell colSpan={colSpan ?? 2 + nameColSpan} sx={{ py: 0.5, pl: 3 }}>
+                        <InitiativeBonusField id={group.id} bonus={group.initiativeBonus} group />
+                    </TableCell>
+                </TableRow>
+            )}
+
             {/* Expanded group members */}
             {expanded && items.map((item) => (
                 <InitiativeRow
@@ -292,7 +301,6 @@ export default function GroupRow({
                     onRemove={onRowRemove}
                     settings={settings}
                     globalSettings={globalSettings}
-                    started={started}
                     tokens={tokens}
                     colSpan={colSpan}
                     groups={groups}

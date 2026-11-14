@@ -4,6 +4,8 @@ import { getPluginId } from "../getPluginId";
 import type { ObrPort, Unsubscribe } from "../obr/port";
 import { memberIndex, toCombatant, type Combatant, type CombatantPatch } from "./combatant";
 import { deriveGroups, newGroupId, type Group } from "./groups";
+import { setCurrent, setMax, setTemp, type HealthChange } from "./health";
+import { announceConcentrationCheck } from "./concentration";
 import * as turns from "./turnOrder";
 import { resourcesOf, turnOf, type TurnResources } from "./turnResources";
 
@@ -82,12 +84,29 @@ export function createEncounterStore(port: ObrPort) {
         return { combatants, groups, ...readClock(scene) };
     }
 
-    // Commands that can move the turn run one at a time, each on fresh state.
+    // Turn and health commands run one at a time, each on fresh state.
     let queue: Promise<unknown> = Promise.resolve();
     function exclusive<T>(operation: () => Promise<T>): Promise<T> {
         const run = queue.then(operation, operation);
         queue = run.catch(() => {});
         return run;
+    }
+
+    /** Apply health rules to fresh state and announce checks only after the write succeeds. */
+    function changeHP(id: string, calculate: (combatant: Combatant, started: boolean) => HealthChange) {
+        return exclusive(async () => {
+            const { combatants, started } = await turnSnapshot();
+            const combatant = combatants.find((c) => c.id === id);
+            if (!combatant) return;
+            const { patch, concentrationCheck } = calculate(combatant, started);
+            await port.items.update([id], (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (meta) applyCombatantPatch(meta, patch);
+                }
+            });
+            if (concentrationCheck) await announceConcentrationCheck(port, combatant, concentrationCheck.dc);
+        });
     }
 
     /**
@@ -185,6 +204,7 @@ export function createEncounterStore(port: ObrPort) {
                     const group = meta.groupId ? groups.get(meta.groupId) : undefined;
                     if (group) {
                         meta.initiative = group.initiative;
+                        meta.groupInitiativeBonus = group.initiativeBonus;
                         meta.groupName = group.name;
                         meta.groupStaged = group.staged;
                         meta.groupIndex = takeIndex(nextIndex, group.id);
@@ -211,11 +231,12 @@ export function createEncounterStore(port: ObrPort) {
 
             const group = "groupId" in target
                 ? deriveGroups(others).find((g) => g.id === target.groupId)
-                    ?? { id: target.groupId, name: "New Group", initiative: 0, staged: false, active: false }
+                    ?? { id: target.groupId, name: "New Group", initiative: 0, initiativeBonus: 0, staged: false, active: false }
                 : {
                     id: newGroupId(),
                     name: target.newGroup.name.trim() || "New Group",
                     initiative: Math.floor(target.newGroup.initiative ?? 0),
+                    initiativeBonus: 0,
                     staged: target.newGroup.staged,
                     active: false,
                 };
@@ -228,6 +249,7 @@ export function createEncounterStore(port: ObrPort) {
                     meta.name = liveName(item) || meta.name;
                     setGroup(meta, group.id, group.name, group.staged);
                     meta.initiative = group.initiative;
+                    meta.groupInitiativeBonus = group.initiativeBonus;
                     meta.groupIndex = takeIndex(nextIndex, group.id);
                     meta.active = group.active;
                     if (group.staged && opts.hideWhenStaged) item.visible = false;
@@ -264,7 +286,7 @@ export function createEncounterStore(port: ObrPort) {
             await port.items.update(list, (items) => {
                 for (const item of items) {
                     const meta = savedMeta(item);
-                    if (meta) Object.assign(meta, fields);
+                    if (meta) applyCombatantPatch(meta, fields);
                 }
             });
         },
@@ -303,6 +325,75 @@ export function createEncounterStore(port: ObrPort) {
                     if (!meta) continue;
                     clearGroup(meta);
                     meta.active = group.active && item.id === first;
+                }
+            });
+        }),
+
+        /** Commit typed HP using the same rules and write path as button adjustments. */
+        setHP: (id: string, value: number, field: "current" | "temp" | "max" = "current") =>
+            changeHP(id, (combatant, started) => {
+                if (field === "max") return setMax(combatant, value, { inCombat: started });
+                return field === "temp" ? setTemp(combatant, value) : setCurrent(combatant, value);
+            }),
+
+        adjustHP: (id: string, delta: number, field: "current" | "temp" = "current") =>
+            changeHP(id, (combatant) => field === "temp"
+                ? setTemp(combatant, combatant.tempHP + delta)
+                : setCurrent(combatant, combatant.currentHP + delta)),
+
+        async setGroupInitiativeBonus(groupId: string, bonus: number) {
+            if (!Number.isFinite(bonus)) return;
+            const { groups } = await snapshot();
+            const group = groups.find((g) => g.id === groupId);
+            if (!group) return;
+            await port.items.update(group.memberIds, (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (meta) meta.groupInitiativeBonus = Math.trunc(bonus);
+                }
+            });
+        },
+
+        /** Roll NPC turns only. Groups containing PCs keep their manually entered initiative. */
+        rollInitiative: (targetId?: string, random: () => number = Math.random) => exclusive(async () => {
+            const { combatants, groups } = await snapshot();
+            const results = new Map<string, { initiative: number; groupIndex?: number }>();
+            const roll = (bonus: number) => 1 + Math.floor(random() * 20) + bonus;
+            const pcIds = new Set(combatants.filter((c) => c.playerCharacter).map((c) => c.id));
+            for (const group of groups) {
+                if (group.memberIds.some((id) => pcIds.has(id))) continue;
+                if (targetId ? group.id !== targetId : group.staged) continue;
+                const initiative = roll(group.initiativeBonus);
+                group.memberIds.forEach((id, groupIndex) => results.set(id, { initiative, groupIndex }));
+            }
+            for (const c of combatants) {
+                if (c.playerCharacter || c.groupId || (targetId && c.id !== targetId)) continue;
+                results.set(c.id, { initiative: roll(c.initiativeBonus) });
+            }
+            if (!results.size) return;
+            await port.items.update([...results.keys()], (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (meta) Object.assign(meta, results.get(item.id));
+                }
+            });
+        }),
+
+        /** Player entry is allowed only before the encounter starts, including delayed field commits. */
+        setPlayerInitiative: (id: string, initiative: number) => exclusive(async () => {
+            if (!Number.isFinite(initiative)) return;
+            const state = await turnSnapshot();
+            if (state.started) return;
+            const pc = state.combatants.find((c) => c.id === id && c.playerCharacter);
+            if (!pc) return;
+            const group = state.groups.find((g) => g.id === pc.groupId);
+            const ids = group ? group.memberIds : [id];
+            await port.items.update(ids, (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (!meta) continue;
+                    meta.initiative = group ? Math.floor(initiative) : Math.round(initiative * 10) / 10;
+                    if (group) meta.groupIndex = group.memberIds.indexOf(item.id);
                 }
             });
         }),
@@ -356,7 +447,10 @@ export function createEncounterStore(port: ObrPort) {
             const state = await turnSnapshot();
             const change = turns.start(state);
             if (!change) return;
-            await writeWithTurn(state, idsWithResources(state.combatants), clearResources, change);
+            await writeWithTurn(state, state.combatants.map((c) => c.id), (meta) => {
+                clearResources(meta);
+                meta.damageTaken = 0;
+            }, change);
             await setClock(true, 1);
         }),
 
@@ -491,4 +585,17 @@ function takeIndex(next: Map<string, number>, groupId: string): number {
     const i = next.get(groupId) ?? 0;
     next.set(groupId, i + 1);
     return i;
+}
+
+
+/** Accumulate actual HP loss, including temp HP, on the saved token in the same write. */
+function applyCombatantPatch(meta: MetaShape, fields: CombatantPatch) {
+    // Max HP edits are stat corrections rather than attacks.
+    if (!meta.playerCharacter && fields.maxHP === undefined) {
+        const before = meta.currentHP + meta.tempHP;
+        const after = (fields.currentHP ?? meta.currentHP) + (fields.tempHP ?? meta.tempHP);
+        const damage = Math.max(0, before - after);
+        if (damage > 0) meta.damageTaken = (Number.isFinite(meta.damageTaken) ? Math.max(0, meta.damageTaken ?? 0) : 0) + damage;
+    }
+    Object.assign(meta, fields);
 }

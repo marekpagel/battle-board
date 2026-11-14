@@ -34,18 +34,17 @@ export function ringStyle(c: Combatant, kind: RingKind): RingStyle {
         : { color: c.rangeColor ?? d.color, weight: c.rangeWeight ?? d.weight, pattern: c.rangePattern ?? d.pattern, opacity: c.rangeOpacity ?? d.opacity };
 }
 
-type RingSettings = Pick<InitiativeSettings, "showRangeRings" | "showMovementRange" | "showAttackRange" | "dmRingToggle">;
+type RingSettings = Pick<InitiativeSettings, "showRangeRings" | "showMovementRange" | "dmRingToggle">;
 
 /**
  * Which rings should exist. Turn rings: every active PC while the encounter
  * runs. DM preview: every combatant with the preview on, whatever the turn.
- * The movement / attack-range settings apply to both.
+ * Only movement rings are generated; saved attack rings are removed by the planner.
  */
 export function desiredRings(combatants: Combatant[], settings: RingSettings, started: boolean): RingWant[] {
     const wants: RingWant[] = [];
     const add = (c: Combatant, variant: RingVariant) => {
         if (settings.showMovementRange && c.movement > 0) wants.push({ tokenId: c.id, variant, kind: "move", radiusUnits: c.movement, style: ringStyle(c, "move") });
-        if (settings.showAttackRange && c.attackRange > 0) wants.push({ tokenId: c.id, variant, kind: "range", radiusUnits: c.attackRange, style: ringStyle(c, "range") });
     };
     for (const c of combatants) {
         if (started && settings.showRangeRings && c.active && c.playerCharacter) add(c, "normal");

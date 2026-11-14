@@ -14,6 +14,7 @@ import type { InitiativeSettings } from "../settings";
 
 type PlayerTableProps = {
     items: Combatant[];
+    started: boolean;
     settings: InitiativeSettings;
     tokens: CMToken[];
     updateRow?: (id: string, patch: CombatantPatch) => void;
@@ -21,6 +22,7 @@ type PlayerTableProps = {
 
 export default function PlayerTable({
     items,
+    started,
     settings,
     tokens,
     updateRow
@@ -85,6 +87,7 @@ export default function PlayerTable({
                             <PlayerRow
                                 key={item.id}
                                 row={item}
+                                started={started}
                                 tokenUrl={tokenData?.id ? undefined : undefined} // Let PlayerRow handle token URL fetching
                                 settings={settings}
                                 tokens={filteredTokens}

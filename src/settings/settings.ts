@@ -12,6 +12,7 @@ export type InitiativeSettings = {
     showArmor: boolean;
     showHP: boolean;
     showMovementRange: boolean;
+    /** Legacy setting retained for saved-room compatibility; attack rings are no longer drawn. */
     showAttackRange: boolean;
     showConditions: boolean;
     showDistances: boolean;

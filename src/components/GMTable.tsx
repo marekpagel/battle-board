@@ -1,3 +1,4 @@
+import { encounterStore } from "../encounter";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -86,6 +87,7 @@ export default function GmTable({
     const showHP = settings.showHP;
     const showDMR = settings.dmRingToggle;
     const showConc = settings.showConcentration;
+    const tempHPWidth = items.some((c) => c.tempHP !== 0) ? 92 : 36;
 
     const gmColCount = 3 + (showAC ? 1 : 0) + (showHP ? 2 : 0) + (showConc ? 1 : 0) + (showDMR ? 1 : 0);
 
@@ -120,6 +122,7 @@ export default function GmTable({
                 aria-label="initiative table"
                 sx={{
                     tableLayout: "fixed",
+                    minWidth: 420,
                     width: "100%",
                     "& td, & th": { py: 0.25, px: 0.25 },
                     "& thead th": { fontSize: "0.72rem", letterSpacing: 0.4, py: 0.9, height: 28 },
@@ -129,11 +132,11 @@ export default function GmTable({
                     <TableHead>
                         <TableRow>
                             <TableCell width={18}></TableCell>
-                            <TableCell width={40} align="center">INIT</TableCell>
+                            <TableCell width={64} align="center">INIT</TableCell>
                             <TableCell align="center">NAME</TableCell>
                             {showAC && <TableCell width={36} align="center">AC</TableCell>}
-                            {showHP && <TableCell width={62} align="center">HP</TableCell>}
-                            {showHP && <TableCell width={36} align="center">TP</TableCell>}
+                            {showHP && <TableCell width={92} align="center">HP</TableCell>}
+                            {showHP && <TableCell width={tempHPWidth} align="center">TP</TableCell>}
                             {showConc && (
                                 <TableCell width={28} align="center">
                                     <Box
@@ -185,7 +188,6 @@ export default function GmTable({
                                     onRowRemove={onRowRemove}
                                     settings={{
                                         showMovementRange: settings.showMovementRange,
-                                        showAttackRange: settings.showAttackRange,
                                         showConditions: settings.showConditions,
                                         showDistances: settings.showDistances,
                                         showAC,
@@ -222,7 +224,6 @@ export default function GmTable({
                                     onRemove={onRowRemove}
                                     settings={{
                                         showMovementRange: settings.showMovementRange,
-                                        showAttackRange: settings.showAttackRange,
                                         showConditions: settings.showConditions,
                                         showDistances: settings.showDistances,
                                         showAC,
@@ -231,7 +232,6 @@ export default function GmTable({
                                         showConc,
                                     }}
                                     globalSettings={globalSettings}
-                                    started={started}
                                     tokens={tokens}
                                     colSpan={gmColCount}
                                     groups={groups}
@@ -319,6 +319,9 @@ export default function GmTable({
                 borderColor: "divider",
                 flexShrink: 0,
             }}>
+                {!started && (
+                    <Button size="small" variant="text" disabled={!activeRenderItems.some((turn) => turn.type === "individual" ? !turn.item.playerCharacter : turn.items.every((c) => !c.playerCharacter))} onClick={() => encounterStore.rollInitiative().catch(console.error)} sx={{ minWidth: 0, p: 0, border: 0, borderRadius: 0, fontSize: "0.75rem", mb: 0.5 }}>Roll initiative</Button>
+                )}
                 <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
                     <Stack direction="row" alignItems="center" spacing={1.25}>
                         {started ? (
@@ -405,6 +408,7 @@ export default function GmTable({
                         size="small"
                         sx={{
                             tableLayout: "fixed",
+                            minWidth: 420,
                             width: "100%",
                             "& td, & th": { py: 0.25, px: 0.25 },
                             "& thead th": { fontSize: "0.72rem", letterSpacing: 0.4, py: 0.9, height: 28 },
@@ -413,11 +417,11 @@ export default function GmTable({
                         {/* Hidden header to maintain column widths */}
                         <colgroup>
                             <col style={{ width: "22px" }} />
-                            <col style={{ width: "40px" }} />
+                            <col style={{ width: "64px" }} />
                             <col />
                             {showAC && <col style={{ width: "36px" }} />}
-                            {showHP && <col style={{ width: "62px" }} />}
-                            {showHP && <col style={{ width: "36px" }} />}
+                            {showHP && <col style={{ width: "92px" }} />}
+                            {showHP && <col style={{ width: `${tempHPWidth}px` }} />}
                             {showConc && <col style={{ width: "28px" }} />}
                             {showDMR && <col style={{ width: "24px" }} />}
                         </colgroup>
@@ -438,7 +442,6 @@ export default function GmTable({
                                             onRowRemove={onRowRemove}
                                             settings={{
                                                 showMovementRange: settings.showMovementRange,
-                                                showAttackRange: settings.showAttackRange,
                                                 showConditions: settings.showConditions,
                                                 showDistances: settings.showDistances,
                                                 showAC,

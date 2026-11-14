@@ -11,6 +11,7 @@ import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import { alpha } from "@mui/material/styles";
 import OBR, { isImage, type Item } from "@owlbear-rodeo/sdk";
 
+import { encounterStore } from "../encounter";
 import type { Combatant, CombatantPatch } from "../encounter";
 import { HealthBar, HealthDisplay } from "./HealthDisplay";
 import { DistancePanel } from "./DistancePanel";
@@ -24,6 +25,7 @@ import { focusToken } from "./focusToken";
 
 type Props = {
     row: Combatant;
+    started: boolean;
     tokenUrl?: string;
     settings: InitiativeSettings;
     tokens: CMToken[];
@@ -35,6 +37,7 @@ type Props = {
 
 export default function PlayerRow({
     row,
+    started,
     tokenUrl,
     settings,
     tokens,
@@ -61,7 +64,7 @@ export default function PlayerRow({
         setEditingField,
         commitCurrentHP,
         commitTempHP,
-    } = useHPEditing(row, false, onChange); // players cannot edit max HP, the only rule that depends on combat
+    } = useHPEditing(row, onChange);
 
     // Styling for input fields to match DM view
     const inputSx = {
@@ -192,8 +195,19 @@ export default function PlayerRow({
                 </TableCell>
 
                 {/* Initiative */}
-                <TableCell width={40} align="center">
-                    <Box
+                <TableCell width={40} align="center" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                    {row.playerCharacter && !started && updateRow ? (
+                        <CommitNumberField
+                            value={row.groupId ? Math.floor(row.initiative) : row.initiative}
+                            size="small" variant="standard" inputMode="text"
+                            finalize={(n) => Math.round(n * 10) / 10}
+                            onCommit={(initiative) => {
+                                encounterStore.setPlayerInitiative(row.id, initiative).catch(console.error);
+                            }}
+                            slotProps={{ htmlInput: { "aria-label": `Initiative for ${row.name}`, onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.select() } }}
+                            sx={{ width: 36, "& input": { p: 0, textAlign: "center", fontSize: "0.8rem" } }}
+                        />
+                    ) : <Box
                         sx={{
                             display: "inline-flex",
                             px: 0.6,
@@ -206,7 +220,7 @@ export default function PlayerRow({
                         }}
                     >
                         {row.initiative}
-                    </Box>
+                    </Box>}
                 </TableCell>
 
                 {/* Avatar */}
@@ -232,7 +246,7 @@ export default function PlayerRow({
                                 userSelect: "none",
                             }}
                         >
-                            {row.visible ? row.name : <em>Hidden</em>}
+                            {row.visible || row.playerCharacter ? row.name : <em>Hidden</em>}
                         </Typography>
                         {row.concentrating && (
                             <Box
@@ -261,6 +275,11 @@ export default function PlayerRow({
                             </Box>
                         )}
                     </Box>
+                    {!row.playerCharacter && (
+                        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
+                            Damage taken: {row.damageTaken}
+                        </Typography>
+                    )}
                 </TableCell>
 
                 {/* Health */}

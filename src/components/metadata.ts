@@ -12,12 +12,16 @@ export type MetaShape = {
     // core turn/list fields
     name: string;
     initiative: number;
+    initiativeBonus?: number;
+    groupInitiativeBonus?: number;
     active: boolean;
     visible: boolean;
 
     // combat stats
     ac: number;
     currentHP: number;
+    /** Cumulative NPC damage in this encounter; healing does not subtract from it. */
+    damageTaken?: number;
     maxHP: number;
     tempHP: number;
 

@@ -36,6 +36,9 @@ _Avoid_: Current, selected
 **Initiative**:
 The number that places a turn in the turn order; higher goes first.
 
+**Initiative bonus**:
+The modifier added to a d20 initiative roll. Each token keeps its individual bonus; a group has a separate shared bonus and rolls once for all members. Bonuses default to 0. Automatic rolls apply only to NPC turns; groups containing a PC use manual initiative.
+
 ### Groups
 
 **Group**:
@@ -54,12 +57,15 @@ Dissolve a group so each member takes its own turn.
 ### Combatants
 
 **PC**:
-A combatant controlled by a player. Determines turn rings, which health visibility rule applies, and whether players may edit its HP.
+A combatant controlled by a player. Determines turn rings, which health visibility rule applies, and whether players may edit its HP. PCs always appear in the player tracker, including before an encounter starts and when the general player list is disabled. Players may enter PC initiative only while the encounter has not started; during the encounter it is read-only.
 _Avoid_: Player character flag, hero
 
 **NPC**:
 Any combatant that is not a PC.
 _Avoid_: Monster, enemy
+
+**Damage taken**:
+The cumulative HP lost by an NPC in the encounter, including damage absorbed by temp HP. Players see this total beside its name regardless of health mode. Healing never subtracts from it, and max HP corrections do not count as damage. It resets when a new encounter starts; older tokens without a saved total start at 0.
 
 **Bloodied**:
 Health status of a combatant below half its max HP.
@@ -96,8 +102,8 @@ The height of a token's bottom face above the map, in scene units; may be negati
 **Movement ring**:
 A circle around a combatant showing how far it can move this turn.
 
-**Attack-range ring**:
-An outline around a combatant showing its attack reach.
+**Health marker**:
+An automatic emoji-only map badge attached to a tracked token at 0 HP: Dead (☠) for an NPC, Unconscious (💤) for a PC. It follows token visibility and position, clears after healing, and remains when the combatant is removed from initiative. Like other derived map items, it updates while a GM's tracker is open.
 
 **DM preview**:
 A ring visible only to the GM, toggled per combatant, independent of whose turn it is.

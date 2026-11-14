@@ -1,3 +1,4 @@
+import { playerCombatants } from "../encounter/playerView";
 import { useCallback, useMemo, useState } from "react";
 import { useCMTokens } from "../components/useCMTokens";
 import { encounterStore, useEncounter, type CombatantPatch } from "../encounter";
@@ -23,11 +24,10 @@ export function useInitiativeState() {
 
     const initiativeItemIds = useMemo(() => new Set(combatants.map((c) => c.id)), [combatants]);
 
-    // What players may see: visible combatants that are not in a staged group.
-    const visibleRows = useMemo(() => {
-        const staged = new Set(groups.filter((g) => g.staged).map((g) => g.id));
-        return combatants.filter((c) => c.visible !== false && !(c.groupId && staged.has(c.groupId)));
-    }, [combatants, groups]);
+    const visibleRows = useMemo(() =>
+        playerCombatants(combatants, groups, started, settings.disablePlayerList),
+        [combatants, groups, started, settings.disablePlayerList]
+    );
 
     const initiativeTokens = useMemo(() =>
         cmTokens.filter(t => initiativeItemIds.has(t.id)),

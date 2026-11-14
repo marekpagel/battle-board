@@ -85,39 +85,6 @@ export function RingControls({ row, config, onUpdate }: Props) {
                     </Typography>
                 </Box>
 
-                {/* Attack Range */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
-                    <ColorPicker
-                        value={config.rangeStyle.color}
-                        onChange={(hex) => onUpdate({ rangeColor: hex })}
-                        weight={config.rangeStyle.weight}
-                        onChangeWeight={(w) => onUpdate({ rangeWeight: w })}
-                        pattern={config.rangeStyle.pattern}
-                        onChangePattern={(p) => onUpdate({ rangePattern: p })}
-                        opacity={config.rangeStyle.opacity}
-                        onChangeOpacity={(o) => onUpdate({ rangeOpacity: o })}
-                    />
-
-                    <Typography sx={{ fontSize: "0.85rem", flexShrink: 0 }}>Atk Range</Typography>
-                    <Box sx={{ flex: 1, minWidth: 0 }} />
-
-                    <CommitNumberField
-                        size="small"
-                        variant="outlined"
-                        value={config.attackRange}
-                        onCommit={(v) => onUpdate({ attackRange: v })}
-                        sx={inputSx}
-                        slotProps={{
-                            htmlInput: {
-                                ...htmlInputProps,
-                                "aria-label": "attack range",
-                            },
-                        }}
-                    />
-                    <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", ml: 0.75, flexShrink: 0 }}>
-                        ft
-                    </Typography>
-                </Box>
             </Stack>
         </Box>
     );

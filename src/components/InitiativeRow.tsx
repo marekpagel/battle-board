@@ -1,3 +1,5 @@
+import { HPButtons } from "./HPButtons";
+import { InitiativeBonusField, InitiativeRollButton } from "./InitiativeControls";
 import { useMemo, useRef, useCallback } from "react";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
@@ -29,7 +31,6 @@ import { focusToken } from "./focusToken";
 
 type RowSettings = {
     showMovementRange: boolean;
-    showAttackRange: boolean;
     showConditions: boolean;
     showDistances: boolean;
     showAC: boolean;
@@ -48,7 +49,6 @@ type Props = {
     onRemove?: (id: string) => void;
     settings?: RowSettings;
     globalSettings: InitiativeSettings;
-    started: boolean;
     tokens: CMToken[];
     colSpan?: number;
     groups: Group[];
@@ -66,7 +66,6 @@ export default function InitiativeRow({
     settings,
     globalSettings,
     tokens,
-    started,
     colSpan,
     groups = [],
     hideInitiative = false, // NEW: Default to false
@@ -80,7 +79,7 @@ export default function InitiativeRow({
         commitCurrentHP,
         commitTempHP,
         applyMaxChange
-    } = useHPEditing(row, started, onChange || (() => { }));
+    } = useHPEditing(row, onChange || (() => { }));
 
     // Use the dmPreview from the row data directly instead of local state
     const dmPreview = !!row.dmPreview;
@@ -111,7 +110,6 @@ export default function InitiativeRow({
         ac: settings?.showAC ?? true,
         hp: settings?.showHP ?? true,
         move: settings?.showMovementRange ?? true,
-        range: settings?.showAttackRange ?? true,
         conditions: settings?.showConditions ?? true,
         distances: settings?.showDistances ?? true,
         dmr: settings?.showDMR ?? true,
@@ -213,6 +211,7 @@ export default function InitiativeRow({
                             }}
                         />
                         : null}
+                    {!hideInitiative && !row.playerCharacter && <InitiativeRollButton id={row.id} initiative={row.initiative} />}
                 </TableCell>
 
                 {/* NAME */}
@@ -368,6 +367,7 @@ export default function InitiativeRow({
                                     </Typography>
                                 )}
                             </Box>
+                            <HPButtons id={row.id} />
                         </TableCell>
 
                         {/* TEMP */}
@@ -406,6 +406,7 @@ export default function InitiativeRow({
                                     </Typography>
                                 </Typography>
                             )}
+                            {row.tempHP !== 0 && <HPButtons id={row.id} temporary />}
                         </TableCell>
                     </>
                 )}
@@ -485,6 +486,7 @@ export default function InitiativeRow({
                         onEntering={onSizeChange}
                     >
                         <Box sx={{ px: 1, pb: 1 }}>
+                            <InitiativeBonusField id={row.id} bonus={row.initiativeBonus} />
                             <Stack direction="row" spacing={1.5} alignItems="stretch">
                                 {/* Left: Ring Controls */}
                                 <RingControls

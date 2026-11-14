@@ -6,6 +6,7 @@ export type Group = {
     name: string;
     /** Whole-number initiative shared by every member. */
     initiative: number;
+    initiativeBonus: number;
     /** Whether any member holds the active turn. */
     active: boolean;
     staged: boolean;
@@ -27,7 +28,7 @@ export function deriveGroups(combatants: Combatant[]): Group[] {
         let entry = byId.get(c.groupId);
         if (!entry) {
             entry = {
-                group: { id: c.groupId, name: "", initiative: Math.floor(c.initiative), active: false, staged: false, memberIds: [] },
+                group: { id: c.groupId, name: "", initiative: Math.floor(c.initiative), initiativeBonus: c.groupInitiativeBonus, active: false, staged: false, memberIds: [] },
                 members: [],
             };
             byId.set(c.groupId, entry);

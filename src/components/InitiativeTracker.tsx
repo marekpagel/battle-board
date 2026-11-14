@@ -20,6 +20,7 @@ import { registerInitiativeContextMenu } from "./initiativeMenu";
 import { useRingSync } from "../hooks/useRingSync";
 import { useDistanceLineSync } from "../hooks/useDistanceLineSync";
 import { useConcentrationNotifications } from "../hooks/useConcentrationNotifications";
+import { useHealthMarkers } from "../hooks/useHealthMarkers";
 import { useElevationLabels } from "../hooks/useElevationLabels";
 import { useTurnEndSync } from "../hooks/useTurnEndSync";
 import { useTurnBarPopover } from "../turnbar/useTurnBarPopover";
@@ -51,6 +52,7 @@ export function InitiativeTracker() {
     useRingSync(ready);
     useDistanceLineSync(ready);
     useElevationLabels(ready);
+    useHealthMarkers(ready);
     useTurnEndSync(ready);
     const { playerId } = usePlayerIdentity();
     useTurnBarPopover(role, playerId, settings);
@@ -181,7 +183,7 @@ export function InitiativeTracker() {
                     </Box>
                 ) : (
                     // Player view logic
-                    settings.disablePlayerList ? (
+                    visibleRows.length === 0 && settings.disablePlayerList ? (
                         <Box sx={{
                             flex: 1,
                             display: "flex",
@@ -195,7 +197,7 @@ export function InitiativeTracker() {
                                 The DM has disabled the player initiative list.
                             </Typography>
                         </Box>
-                    ) : !started ? (
+                    ) : visibleRows.length === 0 && !started ? (
                         <Box sx={{
                             flex: 1,
                             display: "flex",
@@ -212,6 +214,7 @@ export function InitiativeTracker() {
                     ) : (
                         <PlayerTable
                             items={visibleRows}
+                            started={started}
                             settings={settings}
                             tokens={initiativeTokens}
                             updateRow={updateRow}

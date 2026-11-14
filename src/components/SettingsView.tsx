@@ -352,7 +352,7 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                                 />
                                 <Divider />
                                 <RowShell
-                                    title="Range Ring Toggle"
+                                    title="Movement Ring Toggle"
                                     description="Show DM ring button."
                                     right={
                                         <Toggle
@@ -448,8 +448,8 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                                 {/* Range Rings (independent row) */}
                                 <Divider />
                                 <RowShell
-                                    title="Range Rings"
-                                    description="PC rings on turn."
+                                    title="Movement Rings"
+                                    description="PC movement rings on turn."
                                     right={
                                         <Toggle
                                             checked={!!value.showRangeRings}

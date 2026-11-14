@@ -8,11 +8,15 @@ export type Combatant = {
     /** Live token label, falling back to the saved name. */
     name: string;
     initiative: number;
+    initiativeBonus: number;
+    groupInitiativeBonus: number;
     active: boolean;
     /** Live token visibility. */
     visible: boolean;
     ac: number;
     currentHP: number;
+    /** Cumulative NPC damage in this encounter; healing does not subtract from it. */
+    damageTaken: number;
     maxHP: number;
     tempHP: number;
     movement: number;
@@ -44,7 +48,7 @@ export type Combatant = {
 
 /** Fields a caller may edit directly. Turn state, membership and group fields have their own commands. */
 export type CombatantPatch = Partial<Pick<Combatant,
-    | "initiative" | "ac" | "currentHP" | "maxHP" | "tempHP" | "movement" | "attackRange" | "elevation"
+    | "initiativeBonus" | "initiative" | "ac" | "currentHP" | "maxHP" | "tempHP" | "movement" | "attackRange" | "elevation"
     | "playerCharacter" | "movementColor" | "rangeColor" | "movementWeight" | "rangeWeight"
     | "movementPattern" | "rangePattern" | "movementOpacity" | "rangeOpacity" | "dmPreview" | "concentrating"
 >>;
@@ -59,10 +63,13 @@ export function toCombatant(item: Item): Combatant | null {
         id: item.id,
         name: img.text?.plainText || item.name || meta.name || "",
         initiative: meta.initiative,
+        initiativeBonus: typeof meta.initiativeBonus === "number" && Number.isFinite(meta.initiativeBonus) ? meta.initiativeBonus : 0,
+        groupInitiativeBonus: typeof meta.groupInitiativeBonus === "number" && Number.isFinite(meta.groupInitiativeBonus) ? meta.groupInitiativeBonus : 0,
         active: meta.active,
         visible: typeof item.visible === "boolean" ? item.visible : meta.visible,
         ac: meta.ac,
         currentHP: meta.currentHP,
+        damageTaken: Number.isFinite(meta.damageTaken) ? Math.max(0, meta.damageTaken ?? 0) : 0,
         maxHP: meta.maxHP,
         tempHP: meta.tempHP,
         movement: meta.movement,

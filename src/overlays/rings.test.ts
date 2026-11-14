@@ -22,7 +22,7 @@ const fakeRing: RingFactory = (shape) => ({
 }) as unknown as Item;
 
 const c = (id: string, extra: Partial<Combatant> = {}): Combatant => ({
-    id, name: id, initiative: 0, active: false, visible: true, ac: 10, currentHP: 10, maxHP: 10, tempHP: 0,
+    id, name: id, initiative: 0, initiativeBonus: 0, groupInitiativeBonus: 0, damageTaken: 0, active: false, visible: true, ac: 10, currentHP: 10, maxHP: 10, tempHP: 0,
     movement: 30, attackRange: 60, elevation: 0, playerCharacter: false, ownerId: "gm", ...extra,
 });
 
@@ -32,21 +32,21 @@ const kinds = (wants: ReturnType<typeof desiredRings>) => wants.map((w) => `${w.
 describe("desiredRings", () => {
     it("gives every active PC turn rings while the encounter runs, and no one else", () => {
         const combatants = [c("pc1", { playerCharacter: true, active: true }), c("pc2", { playerCharacter: true, active: true }), c("npc", { active: true }), c("idle", { playerCharacter: true })];
-        expect(kinds(desiredRings(combatants, settings, true))).toEqual(["pc1:normal:move", "pc1:normal:range", "pc2:normal:move", "pc2:normal:range"]);
+        expect(kinds(desiredRings(combatants, settings, true))).toEqual(["pc1:normal:move", "pc2:normal:move"]);
         expect(desiredRings(combatants, settings, false)).toEqual([]);
         expect(desiredRings(combatants, { ...settings, showRangeRings: false }, true)).toEqual([]);
     });
 
     it("gives DM previews whatever the turn, unless the preview button is turned off", () => {
         const combatants = [c("a", { dmPreview: true })];
-        expect(kinds(desiredRings(combatants, settings, false))).toEqual(["a:dm:move", "a:dm:range"]);
+        expect(kinds(desiredRings(combatants, settings, false))).toEqual(["a:dm:move"]);
         expect(desiredRings(combatants, { ...settings, dmRingToggle: false }, false)).toEqual([]);
     });
 
-    it("applies the movement and attack-range settings to turn rings and previews alike", () => {
+    it("applies the movement setting to turn rings and previews alike", () => {
         const combatants = [c("pc", { playerCharacter: true, active: true, dmPreview: true })];
-        expect(kinds(desiredRings(combatants, { ...settings, showMovementRange: false }, true))).toEqual(["pc:normal:range", "pc:dm:range"]);
-        expect(kinds(desiredRings(combatants, { ...settings, showAttackRange: false }, true))).toEqual(["pc:normal:move", "pc:dm:move"]);
+        expect(kinds(desiredRings(combatants, { ...settings, showMovementRange: false }, true))).toEqual([]);
+        expect(kinds(desiredRings(combatants, settings, true))).toEqual(["pc:normal:move", "pc:dm:move"]);
     });
 
     it("hides DM previews from players and shows turn rings to everyone", () => {
@@ -73,7 +73,7 @@ describe("ring sync", () => {
         const scene = createFakeScene({ items: [makeToken({ id: "pc", metadata: meta({ playerCharacter: true, active: true }) })], sceneMetadata: running });
         const port = scene.connect();
         await syncRings(port, grid, fakeRing);
-        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("pc", "normal", "move"), ringIdFor("pc", "normal", "range")]);
+        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("pc", "normal", "move")]);
 
         const writes = scene.writes.length;
         await syncRings(port, grid, fakeRing);
@@ -117,12 +117,12 @@ describe("ring sync", () => {
         });
         await syncRings(port, grid, fakeRing);
         expect(ringIds(scene.peek().items)).toEqual([
-            ringIdFor("b", "dm", "move"), ringIdFor("b", "dm", "range"), ringIdFor("b", "normal", "move"), ringIdFor("b", "normal", "range"),
+            ringIdFor("b", "dm", "move"), ringIdFor("b", "normal", "move"),
         ].sort());
 
         await port.sceneMetadata.set({ [SCENE_META_KEY]: { started: false, round: 0 } });
         await syncRings(port, grid, fakeRing);
-        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("b", "dm", "move"), ringIdFor("b", "dm", "range")]);
+        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("b", "dm", "move")]);
     });
 
     it("keeps honouring a turned-off movement setting on later turns", async () => {
@@ -132,7 +132,21 @@ describe("ring sync", () => {
             roomMetadata: { [ROOM_META_KEY]: { showMovementRange: false } },
         });
         await syncRings(scene.connect(), grid, fakeRing);
-        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("a", "normal", "range")]);
+        expect(ringIds(scene.peek().items)).toEqual([]);
+    });
+
+    it("removes existing attack rings for both turn and DM preview while preserving movement rings", async () => {
+        const token = makeToken({ id: "pc", metadata: meta({ playerCharacter: true, active: true, dmPreview: true }) });
+        const attack = (variant: "normal" | "dm") => fakeRing(ringShape({
+            tokenId: "pc", variant, kind: "range", radiusUnits: 60,
+            style: { color: "#fe4c50", weight: 12, pattern: "dash", opacity: 1 },
+        }, token, grid));
+        const scene = createFakeScene({
+            items: [token, attack("normal"), attack("dm")], sceneMetadata: running,
+            roomMetadata: { [ROOM_META_KEY]: { showAttackRange: true } },
+        });
+        await syncRings(scene.connect(), grid, fakeRing);
+        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("pc", "dm", "move"), ringIdFor("pc", "normal", "move")]);
     });
 
     it("removes rings left by older versions", async () => {
@@ -152,11 +166,11 @@ describe("ring sync", () => {
         const stopGm = startRingSync(scene.connect("GM"), async () => grid, fakeRing);
         await flush();
         await flush();
-        expect(ringIds(scene.peek().items)).toHaveLength(2);
+        expect(ringIds(scene.peek().items)).toHaveLength(1);
 
         stopPlayer();
         stopGm();
         await flush();
-        expect(ringIds(scene.peek().items)).toHaveLength(2);
+        expect(ringIds(scene.peek().items)).toHaveLength(1);
     });
 });
