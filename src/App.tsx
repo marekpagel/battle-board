@@ -6,6 +6,13 @@ import { InitiativeTracker } from "./components/InitiativeTracker";
 export function App() {
   const [sceneReady, setSceneReady] = useState(false);
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      void Promise.all([
+        OBR.action.setTitle("Battle Board (Dev)"),
+        OBR.action.setBadgeBackgroundColor("#b45309"),
+        OBR.action.setBadgeText("DEV"),
+      ]).catch(console.error);
+    }
     OBR.scene.isReady().then(setSceneReady);
     return OBR.scene.onReadyChange(setSceneReady);
   }, []);

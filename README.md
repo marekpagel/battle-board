@@ -449,6 +449,19 @@ Battle Board saves all information directly to your scene and token metadata:
 
 ---
 
+## Local Development
+
+Run `npm run dev` and install the local `/manifest.json`
+URL in Owlbear Rodeo. The Vite dev server automatically serves it as
+**Battle Board (Dev)** with a `-dev` version suffix, and the action button
+shows a **DEV** badge when opened. The name and version derive from the normal
+manifest; there is no separate dev manifest to edit.
+
+`npm run build` keeps the normal **Battle Board** name, version and button.
+If Owlbear has cached an older local manifest, remove and re-add only the local
+extension once to refresh its card in the extension manager. The dev toolbar
+badge appears without reinstalling the extension once its updated app loads.
+
 ## Support & Development
 
 Battle Board is actively developed and supported. For feature requests, bug reports, or to support development:
