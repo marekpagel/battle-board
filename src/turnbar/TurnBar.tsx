@@ -10,20 +10,18 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
-import KeyboardArrowUpRounded from "@mui/icons-material/KeyboardArrowUpRounded";
-import KeyboardArrowDownRounded from "@mui/icons-material/KeyboardArrowDownRounded";
 import { encounterStore, useEncounter, type Combatant } from "../encounter";
 import { turnOrder } from "../encounter/turnOrder";
 import { barCombatants, endProgress, resourcesOf, turnOf, type TurnResources } from "../encounter/turnResources";
-import { useGrid } from "../hooks/useGrid";
 import { usePlayerIdentity } from "./usePlayerIdentity";
 import { TURN_BAR_POPOVER_ID } from "./useTurnBarPopover";
+
+const TURN_BAR_FONT_SIZE = "0.7rem";
 
 /** The player's turn bar: one slide per owned combatant, cycling like a carousel. */
 export function TurnBar() {
     const encounter = useEncounter();
     const { playerId, connected } = usePlayerIdentity();
-    const grid = useGrid();
     const owned = useMemo(() => (playerId ? barCombatants(encounter, playerId) : []), [encounter, playerId]);
     const [shownId, setShownId] = useState<string | null>(null);
     const fitRef = useFitPopover();
@@ -47,10 +45,6 @@ export function TurnBar() {
     const turn = turnOf(turnOrder(encounter), combatant.id);
     const progress = turn?.kind === "group" ? endProgress(turn, connected) : null;
 
-    const unitsPerCell = grid?.unitsPerCell ?? 5;
-    const unit = grid?.unitLabel ?? "ft";
-    const moved = resources.movementUsed * unitsPerCell;
-    const overSpeed = moved > combatant.movement;
     // Off-turn, only a reaction can be taken.
     const onTurn = combatant.active;
 
@@ -58,7 +52,7 @@ export function TurnBar() {
         <Box
             ref={fitRef}
             // Natural width, not the popover's current width, so the fit can grow as well as shrink.
-            sx={{ display: "flex", width: "max-content", whiteSpace: "nowrap", alignItems: "center", gap: 0.75, px: 1, py: 0.5, bgcolor: "background.paper", "& > *": { flexShrink: 0 } }}
+            sx={{ display: "flex", width: "max-content", whiteSpace: "nowrap", alignItems: "center", gap: 0.5, pl: 0, pr: 0.5, py: 0, bgcolor: "background.paper", "& > *": { flexShrink: 0 } }}
         >
             <Carousel combatant={combatant} count={owned.length} onStep={step} />
 
@@ -70,38 +64,16 @@ export function TurnBar() {
 
             <Divider orientation="vertical" flexItem />
 
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Box sx={{ textAlign: "center", minWidth: 58 }}>
-                    <Typography sx={{ fontSize: "0.65rem", color: "text.secondary", lineHeight: 1 }}>MOVED</Typography>
-                    <Typography
-                        sx={{ fontSize: "0.85rem", fontWeight: 700, lineHeight: 1.3, color: !onTurn ? "text.disabled" : overSpeed ? "warning.main" : "text.primary" }}
-                        title={overSpeed ? "More than this combatant's speed" : undefined}
-                    >
-                        {moved}/{combatant.movement}{unit}
-                    </Typography>
-                </Box>
-                <Box sx={{ display: "flex", flexDirection: "column" }}>
-                    <IconButton size="small" sx={{ p: 0 }} aria-label="moved one more cell" disabled={!onTurn} onClick={() => set({ movementUsed: resources.movementUsed + 1 })}>
-                        <KeyboardArrowUpRounded fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" sx={{ p: 0 }} aria-label="moved one fewer cell" disabled={!onTurn || resources.movementUsed === 0}
-                        onClick={() => set({ movementUsed: resources.movementUsed - 1 })}>
-                        <KeyboardArrowDownRounded fontSize="small" />
-                    </IconButton>
-                </Box>
-            </Box>
-
-            <Divider orientation="vertical" flexItem />
-
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 76 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
                 <Button
                     size="small"
                     variant={resources.ended ? "outlined" : "contained"}
                     disabled={!onTurn}
                     onClick={() => set({ ended: !resources.ended })}
-                    sx={{ px: 1, minWidth: 0, whiteSpace: "nowrap", fontSize: "0.75rem" }}
+                    aria-label={resources.ended ? "Undo end turn" : "End turn"}
+                    sx={{ px: 0.75, py: 0.5, minWidth: 0, whiteSpace: "nowrap", fontSize: TURN_BAR_FONT_SIZE, fontWeight: 700, lineHeight: 1.2, textTransform: "none" }}
                 >
-                    {resources.ended ? "Undo end" : "End turn"}
+                    {resources.ended ? "Undo" : "End"}
                 </Button>
                 {progress && onTurn && progress.total > 1 && (
                     <Typography sx={{ fontSize: "0.65rem", color: "text.secondary", mt: 0.25 }}>
@@ -142,7 +114,7 @@ function Carousel({ combatant, count, onStep }: { combatant: Combatant; count: n
     return (
         <Box sx={{ display: "flex", alignItems: "center" }}>
             {arrows && (
-                <IconButton size="small" sx={{ p: 0.25 }} aria-label="previous token" onClick={() => onStep(-1)}>
+                <IconButton size="small" sx={{ p: 0 }} aria-label="previous token" onClick={() => onStep(-1)}>
                     <ChevronLeftRounded fontSize="small" />
                 </IconButton>
             )}
@@ -155,12 +127,12 @@ function Carousel({ combatant, count, onStep }: { combatant: Combatant; count: n
                         height: 44,
                         bgcolor: "action.selected",
                         outline: (t) => (combatant.active ? `3px solid ${t.palette.primary.main}` : "none"),
-                        outlineOffset: 1,
+                        outlineOffset: -3,
                     }}
                 />
             </Tooltip>
             {arrows && (
-                <IconButton size="small" sx={{ p: 0.25 }} aria-label="next token" onClick={() => onStep(1)}>
+                <IconButton size="small" sx={{ p: 0 }} aria-label="next token" onClick={() => onStep(1)}>
                     <ChevronRightRounded fontSize="small" />
                 </IconButton>
             )}
@@ -181,8 +153,8 @@ function Resource({ label, used, disabled, onChange }: { label: string; used: bo
             sx={{
                 px: 0.75,
                 py: 0.5,
-                fontSize: "0.7rem",
-                fontWeight: 700,
+                fontSize: TURN_BAR_FONT_SIZE,
+                fontWeight: 400,
                 lineHeight: 1.2,
                 textTransform: "none",
                 textDecoration: used ? "line-through" : "none",

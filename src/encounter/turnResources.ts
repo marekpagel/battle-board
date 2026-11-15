@@ -6,7 +6,7 @@ export type TurnResources = {
     actionUsed: boolean;
     bonusActionUsed: boolean;
     reactionUsed: boolean;
-    /** Grid cells moved. May exceed the combatant's speed (Dash). */
+    /** Legacy movement counter in grid cells, retained for saved-data compatibility. */
     movementUsed: number;
     /** The combatant has pressed End turn. */
     ended: boolean;

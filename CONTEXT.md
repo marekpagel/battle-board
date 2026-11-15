@@ -95,7 +95,7 @@ A player's floating tracker, shown during an encounter when the room setting is 
 _Avoid_: Action bar
 
 **Turn resources**:
-What a combatant has used of its turn: action, bonus action, reaction and movement (in grid cells, may exceed its speed). They reset when the combatant's turn starts, including as part of a group turn or by stepping back with Previous. Off-turn only the reaction can be marked used. Starting or ending the encounter, or joining initiative, clears them.
+What a combatant has used of its turn: action, bonus action and reaction. They reset when the combatant's turn starts, including as part of a group turn or by stepping back with Previous. Off-turn only the reaction can be marked used. Starting or ending the encounter, or joining initiative, clears them.
 
 **End turn**:
 A combatant saying it has finished. The turn advances once every counted member has ended: members that are visible and owned by a connected player. A turn with no counted members is driven by the GM as before; the GM's controls always work.
