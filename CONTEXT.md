@@ -37,7 +37,10 @@ _Avoid_: Current, selected
 The number that places a turn in the turn order; higher goes first.
 
 **Initiative bonus**:
-The modifier added to a d20 initiative roll. Each token keeps its individual bonus; a group has a separate shared bonus and rolls once for all members. Bonuses default to 0. Automatic rolls apply only to NPC turns; groups containing a PC use manual initiative.
+The modifier added to a d20 initiative roll. Each token keeps its individual bonus; a group has a separate shared bonus and rolls once for all members. Bonuses default to 0. Bulk rolls apply only to NPC turns. A PC at 0 initiative can be explicitly rolled before the encounter starts; a grouped PC rolls once for the group using its shared bonus. Players must own every group member to roll it themselves; otherwise the DM rolls the group. The DM can reset all initiatives to 0 before an encounter, including staged groups, without changing bonuses or member order.
+
+**Character profile**:
+Reusable permanent stats saved in the room under a token's name: max HP, speed, AC, individual initiative bonus and PC/NPC flag. Name matching ignores case and surrounding spaces. Fresh tokens load a matching profile when first added to initiative and start at full HP; returning tokens keep their saved stats. The DM can explicitly Save, Update, Load or Forget a profile from expanded combatant options. Settings lists saved profiles and supports deleting them, copying JSON, and importing JSON by merging names or replacing the collection. Profiles do not contain encounter state or update existing combatants automatically.
 
 ### Groups
 

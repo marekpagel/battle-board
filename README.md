@@ -68,6 +68,15 @@ When multiple creatures roll the same initiative, use decimals to establish orde
 - Need to insert someone mid-combat? Use `13.5` to place between existing `13.2` and `14`
 - Boss with minions all on `15`: Boss = `15`, Minions = `15.1`, `15.2`, `15.3`
 
+Before starting an encounter, **Reset initiative to 0** clears initiatives for
+all combatants, including staged groups. PCs at 0 initiative have an individual
+**Roll** button in both the DM and player tracker; it disappears once they roll
+or the encounter starts. Grouped PCs use their group's shared initiative bonus.
+Players can roll a group when they own every member; otherwise, ask the DM
+to roll it.
+The main **Roll initiative** button continues to skip PCs and groups containing
+PCs.
+
 #### Turn Management
 - **Start/End Combat** - Activates the initiative system and begins tracking
 - **Next/Previous Turn** - Cycles through initiative order
@@ -87,6 +96,34 @@ Every token row provides quick access to combat-relevant statistics:
 - **Name** - Automatically syncs with token labels
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/stat-editing.png" alt="Stat Editing" style="max-width: 100%; height: auto;">
+
+#### Saved Character Profiles
+
+Prepare one token's max HP, speed, AC, initiative bonus and PC/NPC flag, then
+expand its tracker options and click **Save profile**. The profile is saved
+with the token's displayed name and is available in every scene in the room.
+
+When fresh tokens with the same name join the tracker, their saved profile is
+applied automatically and current HP starts at max. This also works for bulk
+additions and tokens added directly to groups: save one **Goblin** profile,
+then add ten new **Goblin** tokens. Matching ignores case and surrounding
+spaces; **Goblin 1** and **Goblin 2** are different names.
+
+Returning or already-prepared tokens retain their existing HP and stats.
+Use **Load profile** in their expanded options to explicitly apply saved stats
+and refill current HP. **Update profile** changes the template for future
+additions; **Forget profile** removes the template without changing tokens.
+Profiles are managed by the DM and contain no temporary HP, initiative rolls,
+group membership or turn state.
+
+Open **Settings → Saved Profiles** to inspect all saved stats or delete a
+profile. **Copy saved JSON** exports the profile collection for backup or
+transfer to another room. Paste or edit that JSON in the storage field, then
+choose **Merge by name** (the default) to add or update profiles while keeping
+other names. **Replace all profiles** restores the entire collection and removes
+names omitted from the JSON. Imports are validated before saving and do not
+change existing tokens. If clipboard buttons are blocked by your browser, use
+your device's Copy/Paste actions directly in the JSON field.
 
 #### Math Input System
 HP fields support mathematical expressions for quick combat adjustments:

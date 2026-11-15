@@ -1,0 +1,107 @@
+{
+  "owlbear": {
+    "maxHP": 59,
+    "movement": 40,
+    "ac": 13,
+    "initiativeBonus": 1,
+    "playerCharacter": false
+  },
+  "ochre jelly": {
+    "maxHP": 45,
+    "movement": 10,
+    "ac": 8,
+    "initiativeBonus": -2,
+    "playerCharacter": false
+  },
+  "stirge": {
+    "maxHP": 2,
+    "movement": 40,
+    "ac": 14,
+    "initiativeBonus": 3,
+    "playerCharacter": false
+  },
+  "skeleton": {
+    "maxHP": 13,
+    "movement": 30,
+    "ac": 13,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "ghoul": {
+    "maxHP": 22,
+    "movement": 30,
+    "ac": 12,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "bugbear": {
+    "maxHP": 27,
+    "movement": 30,
+    "ac": 16,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "zombie": {
+    "maxHP": 22,
+    "movement": 20,
+    "ac": 8,
+    "initiativeBonus": -2,
+    "playerCharacter": false
+  },
+  "flameskull": {
+    "maxHP": 40,
+    "movement": 40,
+    "ac": 13,
+    "initiativeBonus": 3,
+    "playerCharacter": false
+  },
+  "giant spider": {
+    "maxHP": 26,
+    "movement": 30,
+    "ac": 14,
+    "initiativeBonus": 3,
+    "playerCharacter": false
+  },
+  "black spider": {
+    "maxHP": 27,
+    "movement": 30,
+    "ac": 11,
+    "initiativeBonus": 1,
+    "playerCharacter": false
+  },
+  "spectator": {
+    "maxHP": 39,
+    "movement": 30,
+    "ac": 14,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "glasstaff": {
+    "maxHP": 22,
+    "movement": 30,
+    "ac": 13,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "grick": {
+    "maxHP": 27,
+    "movement": 30,
+    "ac": 14,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  },
+  "nothic": {
+    "maxHP": 45,
+    "movement": 30,
+    "ac": 15,
+    "initiativeBonus": 3,
+    "playerCharacter": false
+  },
+  "goblin": {
+    "maxHP": 7,
+    "movement": 30,
+    "ac": 15,
+    "initiativeBonus": 2,
+    "playerCharacter": false
+  }
+}

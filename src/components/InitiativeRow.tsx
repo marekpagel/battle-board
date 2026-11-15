@@ -1,3 +1,4 @@
+import { ProfileControls } from "./ProfileControls";
 import { HPButtons } from "./HPButtons";
 import { InitiativeBonusField, InitiativeRollButton } from "./InitiativeControls";
 import { useMemo, useRef, useCallback } from "react";
@@ -41,6 +42,7 @@ type RowSettings = {
 
 type Props = {
     row: Combatant;
+    started: boolean;
     expanded?: boolean;
     onToggleExpand?: () => void;
     onRequestActivate?: () => void;
@@ -66,6 +68,7 @@ export default function InitiativeRow({
     settings,
     globalSettings,
     tokens,
+    started,
     colSpan,
     groups = [],
     hideInitiative = false, // NEW: Default to false
@@ -211,7 +214,7 @@ export default function InitiativeRow({
                             }}
                         />
                         : null}
-                    {!hideInitiative && !row.playerCharacter && <InitiativeRollButton id={row.id} initiative={row.initiative} />}
+                    {!hideInitiative && <InitiativeRollButton id={row.id} initiative={row.initiative} playerId={row.playerCharacter ? row.id : undefined} started={started} />}
                 </TableCell>
 
                 {/* NAME */}
@@ -486,6 +489,7 @@ export default function InitiativeRow({
                         onEntering={onSizeChange}
                     >
                         <Box sx={{ px: 1, pb: 1 }}>
+                            <ProfileControls row={row} />
                             <InitiativeBonusField id={row.id} bonus={row.initiativeBonus} />
                             <Stack direction="row" spacing={1.5} alignItems="stretch">
                                 {/* Left: Ring Controls */}

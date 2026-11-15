@@ -1,3 +1,4 @@
+import { ProfileSettings } from "./ProfileSettings";
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -519,6 +520,8 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                             </AccordionDetails>
                         </Accordion>
                     </Box>
+
+                    <ProfileSettings />
 
                     {/* ========================== Gameplay ======================== */}
                     <Box>

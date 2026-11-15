@@ -1,3 +1,4 @@
+import { createProfileStore } from "../profiles/store";
 import { playerCombatants } from "./playerView";
 import { describe, expect, it } from "vitest";
 import { createFakeScene, flush } from "../obr/fakeScene";
@@ -566,4 +567,237 @@ it("applies rapid temporary HP taps, counts damage and preserves the total when 
     await store.adjustHP("npc", -5, "temp");
     await store.adjustHP("npc", -5, "temp");
     expect(meta("npc")).toMatchObject({ tempHP: 0, currentHP: 18, damageTaken: 16 });
+});
+
+describe("named profiles when joining initiative", () => {
+    it("shares the profile write queue between encounter saves and profile controls", async () => {
+        const key = "com.missing-link-dev.battle-board/characterProfiles";
+        const stats = { maxHP: 7, movement: 30, ac: 15, initiativeBonus: 2, playerCharacter: false };
+        const scene = createFakeScene({
+            items: [makeToken({ id: "a", name: "Goblin", metadata: saved(stats) })],
+            roomMetadata: { [key]: { wolf: stats } },
+        });
+        const original = scene.connect();
+        let releaseRead!: () => void;
+        let notifyReading!: () => void;
+        const reading = new Promise<void>((resolve) => { notifyReading = resolve; });
+        const blocked = new Promise<void>((resolve) => { releaseRead = resolve; });
+        let reads = 0;
+        const port = {
+            ...original,
+            roomMetadata: {
+                ...original.roomMetadata,
+                get: async () => {
+                    const room = await original.roomMetadata.get();
+                    if (++reads === 1) {
+                        notifyReading();
+                        await blocked;
+                    }
+                    return room;
+                },
+            },
+        };
+        const encounter = createEncounterStore(port);
+        const profiles = createProfileStore(port);
+        const saving = encounter.saveProfile("a");
+        await reading;
+        const forgetting = profiles.forget("wolf");
+        await flush();
+        releaseRead();
+        await Promise.all([saving, forgetting]);
+        expect(await profiles.read()).toEqual({ goblin: stats });
+
+    });
+
+    it("applies a saved profile to ten fresh tokens in one batch, using live names and full HP", async () => {
+        const stats = { maxHP: 7, movement: 30, ac: 15, initiativeBonus: 2, playerCharacter: false };
+        const scene = createFakeScene({ items: [
+            makeToken({ id: "template", name: "Goblin", metadata: saved({ ...stats, currentHP: 1, tempHP: 4, initiative: 19, active: true, concentrating: true }) }),
+            ...Array.from({ length: 10 }, (_, i) => makeToken({ id: `g${i}`, name: " GOBLIN " })),
+            makeToken({ id: "other", name: "Goblin captain" }),
+        ] });
+        const port = scene.connect();
+        const store = createEncounterStore(port);
+        await store.saveProfile("template");
+        await store.add([...Array.from({ length: 10 }, (_, i) => `g${i}`), "other"]);
+        for (const item of scene.peek().items.filter((t) => /^g\d+$/.test(t.id))) {
+            expect(item.metadata[META_KEY]).toMatchObject({ ...stats, currentHP: 7, tempHP: 0, initiative: 0, active: false, concentrating: false });
+        }
+        expect(scene.peek().items.find((t) => t.id === "other")!.metadata[META_KEY]).toMatchObject({ maxHP: 10, ac: 10 });
+        expect(scene.writes.filter((w) => w.kind === "items.update")).toHaveLength(1);
+    });
+
+    it("loads profiles in a new scene, including tokens added directly to a group", async () => {
+        const original = createFakeScene({ items: [makeToken({ id: "pc", name: "Gundren", metadata: saved({ maxHP: 40, currentHP: 5, ac: 18, movement: 25, playerCharacter: true, initiativeBonus: -1 }) })] });
+        await createEncounterStore(original.connect()).saveProfile("pc");
+        const nextScene = createFakeScene({ roomMetadata: original.peek().roomMetadata, items: [makeToken({ id: "next", name: "Gundren" })] });
+        const store = createEncounterStore(nextScene.connect());
+        await store.addToGroup(["next"], { newGroup: { name: "Party", initiative: 16, staged: false } }, { hideWhenStaged: false });
+        expect(nextScene.peek().items[0].metadata[META_KEY]).toMatchObject({ maxHP: 40, currentHP: 40, ac: 18, movement: 25, playerCharacter: true, initiativeBonus: -1, initiative: 16, groupName: "Party" });
+    });
+
+    it("uses the displayed token label as the profile name and preserves prepped and returning tokens", async () => {
+        const { store, port, meta } = await setup([
+            makeToken({ id: "template", name: "Goblin", metadata: saved({ maxHP: 7, ac: 15 }) }),
+            makeToken({ id: "prepped", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, ac: 17, inInitiative: false, damageTaken: 8 }) }),
+            makeToken({ id: "fresh", name: "asset-name" }),
+        ]);
+        await port.items.update(["fresh"], (items) => { (items[0] as ReturnType<typeof makeToken>).text.plainText = "Goblin"; });
+        await store.saveProfile("template");
+        await store.add(["prepped", "fresh"]);
+        expect(meta("fresh")).toMatchObject({ maxHP: 7, ac: 15, currentHP: 7 });
+        expect(meta("prepped")).toMatchObject({ currentHP: 2, maxHP: 20, ac: 17, damageTaken: 8 });
+        await store.adjustHP("fresh", -1);
+        await store.remove(["fresh"]);
+        await store.add(["fresh"]);
+        expect(meta("fresh").currentHP).toBe(6);
+    });
+
+    it("explicitly loads permanent stats without copying encounter state or other token settings", async () => {
+        const { store, meta } = await setup([
+            makeToken({ id: "template", name: "Goblin", metadata: saved({ maxHP: 12, ac: 16, movement: 40, initiativeBonus: 3, currentHP: 1, tempHP: 4 }) }),
+            makeToken({ id: "existing", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, tempHP: 5, damageTaken: 9, active: true, initiative: 17, groupId: "g", movementColor: "#123456" }) }),
+        ]);
+        await store.saveProfile("template");
+        await store.loadProfile("existing");
+        expect(meta("existing")).toMatchObject({ currentHP: 12, maxHP: 12, ac: 16, movement: 40, initiativeBonus: 3, tempHP: 5, damageTaken: 9, active: true, initiative: 17, groupId: "g", movementColor: "#123456" });
+        await expect(store.loadProfile("missing")).rejects.toThrow("no longer");
+    });
+
+    it("saves fresh stats after pending health edits and changes a profile only when explicitly saved", async () => {
+        const { store, scene } = await setup([makeToken({ id: "a", name: "Goblin", metadata: saved() })]);
+        await Promise.all([store.setHP("a", 18, "max"), store.saveProfile("a")]);
+        const key = "com.missing-link-dev.battle-board/characterProfiles";
+        expect(scene.peek().roomMetadata[key]).toMatchObject({ goblin: { maxHP: 18 } });
+        await store.setHP("a", 25, "max");
+        expect(scene.peek().roomMetadata[key]).toMatchObject({ goblin: { maxHP: 18 } });
+        await store.saveProfile("a");
+        expect(scene.peek().roomMetadata[key]).toMatchObject({ goblin: { maxHP: 25 } });
+    });
+});
+
+it("applies imported profiles to future additions while leaving current combatants unchanged", async () => {
+    const { store, port, meta } = await setup([
+        makeToken({ id: "existing", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 10 }) }),
+        makeToken({ id: "fresh", name: "Goblin" }),
+    ]);
+    await createProfileStore(port).importStorage(JSON.stringify({ goblin: { maxHP: 7, ac: 15, movement: 30, initiativeBonus: 2, playerCharacter: false } }));
+    expect(meta("existing")).toMatchObject({ currentHP: 2, maxHP: 10 });
+    await store.add(["fresh"]);
+    expect(meta("fresh")).toMatchObject({ currentHP: 7, maxHP: 7, ac: 15, initiativeBonus: 2 });
+});
+
+describe("pre-encounter initiative controls", () => {
+    it("asks the DM to roll groups containing tokens the player does not own", async () => {
+        const { scene, store, meta } = await setup([
+            makeToken({ id: "pc", owner: "alice", metadata: saved({ playerCharacter: true, groupId: "g", groupIndex: 0 }) }),
+            makeToken({ id: "npc", owner: "gm", metadata: saved({ groupId: "g", groupIndex: 1 }) }),
+        ]);
+        const port = scene.connect("PLAYER", "alice");
+        let playerWrites = 0;
+        const player = createEncounterStore({
+            ...port,
+            items: { ...port.items, update: async () => { playerWrites++; throw new Error("Owner-only permission denied"); } },
+        });
+        let rolls = 0;
+        await expect(player.rollPlayerInitiative("pc", () => { rolls++; return 0.5; })).rejects.toThrow("Ask the DM");
+        expect(playerWrites).toBe(0);
+        expect(rolls).toBe(0);
+        expect(meta("pc").initiative).toBe(0);
+        expect(meta("npc").initiative).toBe(0);
+        await store.rollPlayerInitiative("pc", () => 0.5);
+        expect(meta("pc").initiative).toBe(11);
+        expect(meta("npc").initiative).toBe(11);
+    });
+
+    it("allows a player to roll a group when they own every member", async () => {
+        const { scene, meta } = await setup([
+            makeToken({ id: "pc", owner: "alice", metadata: saved({ playerCharacter: true, groupId: "g", groupIndex: 0, groupInitiativeBonus: 2 }) }),
+            makeToken({ id: "companion", owner: "alice", metadata: saved({ groupId: "g", groupIndex: 1, groupInitiativeBonus: 2 }) }),
+        ]);
+        const port = scene.connect("PLAYER", "alice");
+        const player = createEncounterStore({
+            ...port,
+            items: { ...port.items, update: async (ids, update) => {
+                const items = await port.items.get(ids);
+                if (items.some((item) => item.createdUserId !== "alice")) throw new Error("Owner-only permission denied");
+                await port.items.update(ids, update);
+            } },
+        });
+        await player.rollPlayerInitiative("pc", () => 0.5);
+        expect(meta("pc")).toMatchObject({ initiative: 13, groupIndex: 0 });
+        expect(meta("companion")).toMatchObject({ initiative: 13, groupIndex: 1 });
+    });
+
+    it("resets PCs, NPCs and staged groups to zero without losing legacy member order or stats", async () => {
+        const { store, meta } = await setup([
+            makeToken({ id: "pc", metadata: saved({ playerCharacter: true, initiative: 18, initiativeBonus: 3, currentHP: 4 }) }),
+            makeToken({ id: "npc", metadata: saved({ initiative: 12, initiativeBonus: 2 }) }),
+            makeToken({ id: "second", metadata: saved({ groupId: "g", groupStaged: true, initiative: 10.2, groupInitiativeBonus: 4 }) }),
+            makeToken({ id: "first", metadata: saved({ groupId: "g", groupStaged: true, initiative: 10.1, groupInitiativeBonus: 4 }) }),
+            makeToken({ id: "removed", metadata: saved({ inInitiative: false, initiative: 17 }) }),
+        ]);
+        await store.resetInitiative();
+        expect(meta("pc")).toMatchObject({ initiative: 0, initiativeBonus: 3, currentHP: 4, playerCharacter: true });
+        expect(meta("npc")).toMatchObject({ initiative: 0, initiativeBonus: 2 });
+        expect(meta("first")).toMatchObject({ initiative: 0, groupIndex: 0, groupStaged: true, groupInitiativeBonus: 4 });
+        expect(meta("second")).toMatchObject({ initiative: 0, groupIndex: 1, groupStaged: true, groupInitiativeBonus: 4 });
+        expect(meta("removed").initiative).toBe(17);
+    });
+
+    it("rejects reset after the encounter starts and from player clients", async () => {
+        const { store, scene, meta } = await setup([makeToken({ id: "pc", metadata: saved({ playerCharacter: true, initiative: 18 }) })]);
+        await createEncounterStore(scene.connect("PLAYER")).resetInitiative();
+        expect(scene.writes).toEqual([]);
+        await Promise.all([store.start(), store.resetInitiative()]);
+        expect(meta("pc").initiative).toBe(18);
+    });
+
+    it("rolls a PC explicitly at zero while bulk rolls continue to skip all PCs", async () => {
+        const { store, meta } = await setup([
+            makeToken({ id: "pc", metadata: saved({ playerCharacter: true, initiativeBonus: 2 }) }),
+            makeToken({ id: "waiting-pc", metadata: saved({ playerCharacter: true }) }),
+            makeToken({ id: "npc", metadata: saved() }),
+        ]);
+        await store.rollPlayerInitiative("pc", () => 0.5);
+        expect(meta("pc").initiative).toBe(13);
+        await store.rollInitiative(undefined, () => 0);
+        expect(meta("pc").initiative).toBe(13);
+        expect(meta("waiting-pc").initiative).toBe(0);
+        expect(meta("npc").initiative).toBe(1);
+    });
+
+    it("allows player-client PC rolls but blocks nonzero, non-PC and ongoing-encounter rolls", async () => {
+        const { store, scene, meta } = await setup([
+            makeToken({ id: "pc", metadata: saved({ playerCharacter: true, initiative: 9 }) }),
+            makeToken({ id: "waiting", metadata: saved({ playerCharacter: true }) }),
+            makeToken({ id: "npc", metadata: saved() }),
+        ]);
+        const player = createEncounterStore(scene.connect("PLAYER"));
+        let rolls = 0;
+        const random = () => { rolls++; return 0; };
+        await player.rollPlayerInitiative("pc", random);
+        await player.rollPlayerInitiative("npc", random);
+        expect(rolls).toBe(0);
+        expect(scene.writes).toEqual([]);
+        await player.rollPlayerInitiative("waiting", random);
+        expect(meta("waiting").initiative).toBe(1);
+        await store.setPlayerInitiative("waiting", 0);
+        await Promise.all([store.start(), store.rollPlayerInitiative("waiting", random)]);
+        expect(meta("waiting").initiative).toBe(0);
+        expect(rolls).toBe(1);
+    });
+
+    it("rolls a PC group once with the shared bonus and preserves member order", async () => {
+        const { store, meta } = await setup([
+            makeToken({ id: "pc", metadata: saved({ playerCharacter: true, groupId: "g", groupIndex: 1, initiativeBonus: 8, groupInitiativeBonus: 3 }) }),
+            makeToken({ id: "npc", metadata: saved({ groupId: "g", groupIndex: 0, groupInitiativeBonus: 3 }) }),
+        ]);
+        await store.rollPlayerInitiative("pc", () => 0.5);
+        expect(meta("pc")).toMatchObject({ initiative: 14, groupIndex: 1, initiativeBonus: 8 });
+        expect(meta("npc")).toMatchObject({ initiative: 14, groupIndex: 0 });
+        await store.rollInitiative(undefined, () => 0);
+        expect(meta("pc").initiative).toBe(14);
+        expect(meta("npc").initiative).toBe(14);
+    });
 });

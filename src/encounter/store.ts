@@ -7,6 +7,8 @@ import { deriveGroups, newGroupId, type Group } from "./groups";
 import { setCurrent, setMax, setTemp, type HealthChange } from "./health";
 import { announceConcentrationCheck } from "./concentration";
 import * as turns from "./turnOrder";
+import { createProfileStore } from "../profiles/store";
+import { findProfile, type CharacterProfiles } from "../profiles/profiles";
 import { resourcesOf, turnOf, type TurnResources } from "./turnResources";
 
 export const SCENE_META_KEY = getPluginId("sceneState");
@@ -36,6 +38,7 @@ export type EncounterStore = ReturnType<typeof createEncounterStore>;
  * elevation popover) can create a store just to issue them.
  */
 export function createEncounterStore(port: ObrPort) {
+    const profileStore = createProfileStore(port);
     let state: EncounterState = { ready: false, combatants: [], groups: [], started: false, round: 0 };
     const listeners = new Set<() => void>();
     let stopSync: Unsubscribe | null = null;
@@ -184,14 +187,14 @@ export function createEncounterStore(port: ObrPort) {
         async add(tokenIds: string[], opts: { solo?: boolean } = {}) {
             if (!tokenIds.length) return;
             const adding = new Set(tokenIds);
-            const { combatants } = await snapshot();
+            const [{ combatants }, profiles] = await Promise.all([snapshot(), profileStore.read()]);
             const others = combatants.filter((c) => !adding.has(c.id));
             const groups = new Map(deriveGroups(others).map((g) => [g.id, g]));
             const nextIndex = nextIndexByGroup(others);
 
             await port.items.update(tokenIds, (items) => {
                 for (const item of items) {
-                    const meta = editableMeta(item);
+                    const meta = editableMeta(item, profiles);
                     // Joining starts with fresh turn resources, whatever an earlier encounter left.
                     if (meta.inInitiative === false) clearResources(meta);
                     meta.inInitiative = true;
@@ -224,7 +227,7 @@ export function createEncounterStore(port: ObrPort) {
          */
         async addToGroup(tokenIds: string[], target: GroupTarget, opts: { hideWhenStaged: boolean }): Promise<string> {
             const adding = new Set(tokenIds);
-            const { combatants } = await snapshot();
+            const [{ combatants }, profiles] = await Promise.all([snapshot(), profileStore.read()]);
             const wasCombatant = new Set(combatants.map((c) => c.id));
             const others = combatants.filter((c) => !adding.has(c.id));
             const nextIndex = nextIndexByGroup(others);
@@ -243,7 +246,7 @@ export function createEncounterStore(port: ObrPort) {
 
             await port.items.update(tokenIds, (items) => {
                 for (const item of items) {
-                    const meta = editableMeta(item);
+                    const meta = editableMeta(item, profiles);
                     if (!wasCombatant.has(item.id)) clearResources(meta);
                     meta.inInitiative = true;
                     meta.name = liveName(item) || meta.name;
@@ -329,6 +332,30 @@ export function createEncounterStore(port: ObrPort) {
             });
         }),
 
+        /** Save current permanent stats under the combatant's live name. */
+        saveProfile: (id: string) => exclusive(async () => {
+            const { combatants } = await snapshot();
+            const combatant = combatants.find((c) => c.id === id);
+            if (!combatant) throw new Error("This token is no longer in the tracker.");
+            await profileStore.save(combatant.name, combatant);
+        }),
+
+        /** Explicitly load a profile onto an existing combatant, filling current HP to max. */
+        loadProfile: (id: string) => exclusive(async () => {
+            if (await port.player.getRole() !== "GM") throw new Error("Only the DM can load profiles.");
+            const [{ combatants }, profiles] = await Promise.all([snapshot(), profileStore.read()]);
+            const combatant = combatants.find((c) => c.id === id);
+            if (!combatant) throw new Error("This token is no longer in the tracker.");
+            const profile = findProfile(profiles, combatant.name);
+            if (!profile) throw new Error(`No saved profile for ${combatant.name}.`);
+            await port.items.update([id], (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (meta) Object.assign(meta, profile, { currentHP: profile.maxHP });
+                }
+            });
+        }),
+
         /** Commit typed HP using the same rules and write path as button adjustments. */
         setHP: (id: string, value: number, field: "current" | "temp" | "max" = "current") =>
             changeHP(id, (combatant) => {
@@ -354,7 +381,50 @@ export function createEncounterStore(port: ObrPort) {
             });
         },
 
-        /** Roll NPC turns only. Groups containing PCs keep their manually entered initiative. */
+        /** Reset all solo and shared initiatives before the encounter, preserving member order. */
+        resetInitiative: () => exclusive(async () => {
+            if (await port.player.getRole() !== "GM") return;
+            const state = await turnSnapshot();
+            if (state.started || !state.combatants.length) return;
+            const indices = new Map(state.groups.flatMap((g) => g.memberIds.map((id, index) => [id, index] as const)));
+            await port.items.update(state.combatants.map((c) => c.id), (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (!meta) continue;
+                    meta.initiative = 0;
+                    if (indices.has(item.id)) meta.groupIndex = indices.get(item.id)!;
+                }
+            });
+        }),
+
+        /** Explicit PC rolls are allowed at zero before the encounter; bulk rolls still skip PCs. */
+        rollPlayerInitiative: (id: string, random: () => number = Math.random) => exclusive(async () => {
+            const state = await turnSnapshot();
+            if (state.started) return;
+            const pc = state.combatants.find((c) => c.id === id && c.playerCharacter);
+            if (!pc) return;
+            const group = state.groups.find((g) => g.id === pc.groupId);
+            if ((group?.initiative ?? pc.initiative) !== 0) return;
+            if (group && await port.player.getRole() !== "GM") {
+                const playerId = await port.player.getId();
+                const members = state.combatants.filter((c) => c.groupId === group.id);
+                if (members.some((c) => c.ownerId !== playerId)) {
+                    throw new Error("Ask the DM to roll this group. You must own every member to roll it yourself.");
+                }
+            }
+            const initiative = 1 + Math.floor(random() * 20) + (group?.initiativeBonus ?? pc.initiativeBonus);
+            const ids = group?.memberIds ?? [id];
+            await port.items.update(ids, (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (!meta) continue;
+                    meta.initiative = initiative;
+                    if (group) meta.groupIndex = group.memberIds.indexOf(item.id);
+                }
+            });
+        }),
+
+        /** Roll NPC turns only. Groups containing PCs are left unchanged. */
         rollInitiative: (targetId?: string, random: () => number = Math.random) => exclusive(async () => {
             const { combatants, groups } = await snapshot();
             const results = new Map<string, { initiative: number; groupIndex?: number }>();
@@ -535,7 +605,7 @@ function savedMeta(item: Item): MetaShape | undefined {
 }
 
 /** The item's saved data for in-place editing, created with defaults if missing. */
-function editableMeta(item: Item): MetaShape {
+function editableMeta(item: Item, profiles: CharacterProfiles): MetaShape {
     const existing = savedMeta(item);
     if (existing) {
         // Carry the oldest save format's group over before group fields are rewritten.
@@ -544,6 +614,8 @@ function editableMeta(item: Item): MetaShape {
         return existing;
     }
     const created = createMetaForItem(item);
+    const profile = findProfile(profiles, liveName(item));
+    if (profile) Object.assign(created, profile, { currentHP: profile.maxHP });
     (item.metadata as Record<string, unknown>)[META_KEY] = created;
     return created;
 }

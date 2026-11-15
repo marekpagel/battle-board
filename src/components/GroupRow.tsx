@@ -187,7 +187,7 @@ export default function GroupRow({
                             },
                         }}
                     />
-                    {!items.some((item) => item.playerCharacter) && <InitiativeRollButton id={group.id} initiative={group.initiative} group />}
+                    <InitiativeRollButton id={group.id} initiative={group.initiative} group playerId={items.find((item) => item.playerCharacter)?.id} started={started} />
                 </TableCell>
 
                 {/* GROUP NAME - spans multiple columns with buttons right-justified */}
@@ -295,6 +295,7 @@ export default function GroupRow({
                 <InitiativeRow
                     key={item.id}
                     row={item}
+                    started={started}
                     expanded={expandedIds.has(item.id)}
                     onToggleExpand={() => onToggleItemExpand(item.id)}
                     onChange={(draft) => onRowChange(item.id, draft)}

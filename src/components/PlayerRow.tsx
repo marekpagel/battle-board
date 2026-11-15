@@ -11,6 +11,7 @@ import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import { alpha } from "@mui/material/styles";
 import OBR, { isImage, type Item } from "@owlbear-rodeo/sdk";
 
+import { InitiativeRollButton } from "./InitiativeControls";
 import { encounterStore } from "../encounter";
 import type { Combatant, CombatantPatch } from "../encounter";
 import { HealthBar, HealthDisplay } from "./HealthDisplay";
@@ -221,6 +222,7 @@ export default function PlayerRow({
                     >
                         {row.initiative}
                     </Box>}
+                    {row.playerCharacter && <InitiativeRollButton id={row.id} initiative={row.groupId ? Math.floor(row.initiative) : row.initiative} playerId={row.id} started={started} />}
                 </TableCell>
 
                 {/* Avatar */}

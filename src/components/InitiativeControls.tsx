@@ -1,3 +1,6 @@
+import { useState } from "react";
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
@@ -18,13 +21,20 @@ export function InitiativeBonusField({ id, bonus, group = false }: { id: string;
     </Stack>;
 }
 
-export function InitiativeRollButton({ id, initiative, group = false }: { id: string; initiative: number; group?: boolean }) {
-    if (initiative !== 0) return null;
-    return <Button size="small" variant="text" aria-label={group ? "Roll group initiative" : "Roll initiative"}
+export function InitiativeRollButton({ id, initiative, group = false, playerId, started }: { id: string; initiative: number; group?: boolean; playerId?: string; started: boolean }) {
+    const [error, setError] = useState("");
+    if (initiative !== 0 || (playerId && started)) return null;
+    return <><Button size="small" variant="text" aria-label={group ? "Roll group initiative" : "Roll initiative"}
         onClick={(e) => {
             e.stopPropagation();
-            encounterStore.rollInitiative(id).catch(console.error);
+            setError("");
+            const roll = playerId ? encounterStore.rollPlayerInitiative(playerId) : encounterStore.rollInitiative(id);
+            roll.catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Unable to roll initiative."));
         }}
         onDoubleClick={(e) => e.stopPropagation()}
-        sx={{ minWidth: 0, p: 0, border: 0, borderRadius: 0, fontSize: "0.65rem", lineHeight: 1.5 }}>Roll</Button>;
+        sx={{ minWidth: 0, p: 0, border: 0, borderRadius: 0, fontSize: "0.65rem", lineHeight: 1.5 }}>Roll</Button>
+        <Snackbar open={!!error} onClose={() => setError("")} onClick={(e) => e.stopPropagation()}>
+            <Alert severity="error" onClose={() => setError("")}>{error}</Alert>
+        </Snackbar>
+    </>;
 }
