@@ -13,6 +13,7 @@ import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import { encounterStore, useEncounter, type Combatant } from "../encounter";
 import { turnOrder } from "../encounter/turnOrder";
 import { barCombatants, endProgress, resourcesOf, turnOf, type TurnResources } from "../encounter/turnResources";
+import { focusToken } from "../components/focusToken";
 import { usePlayerIdentity } from "./usePlayerIdentity";
 import { TURN_BAR_POPOVER_ID } from "./useTurnBarPopover";
 
@@ -118,18 +119,21 @@ function Carousel({ combatant, count, onStep }: { combatant: Combatant; count: n
                     <ChevronLeftRounded fontSize="small" />
                 </IconButton>
             )}
-            <Tooltip title={combatant.active ? `${combatant.name}: your turn` : combatant.name}>
-                <Avatar
-                    src={combatant.imageUrl}
-                    alt={combatant.name}
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        bgcolor: "action.selected",
-                        outline: (t) => (combatant.active ? `3px solid ${t.palette.primary.main}` : "none"),
-                        outlineOffset: -3,
-                    }}
-                />
+            <Tooltip title={`Center map on ${combatant.name}${combatant.active ? " (your turn)" : ""}`}>
+                <IconButton aria-label={`Center map on ${combatant.name}`} sx={{ p: 0 }}
+                    onClick={() => void focusToken(combatant.id).catch(console.error)}>
+                    <Avatar
+                        src={combatant.imageUrl}
+                        alt={combatant.name}
+                        sx={{
+                            width: 44,
+                            height: 44,
+                            bgcolor: "action.selected",
+                            outline: (t) => (combatant.active ? `3px solid ${t.palette.primary.main}` : "none"),
+                            outlineOffset: -3,
+                        }}
+                    />
+                </IconButton>
             </Tooltip>
             {arrows && (
                 <IconButton size="small" sx={{ p: 0 }} aria-label="next token" onClick={() => onStep(1)}>

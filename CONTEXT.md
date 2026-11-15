@@ -70,9 +70,6 @@ _Avoid_: Monster, enemy
 **Max HP edit**:
 Changing max HP also sets current HP to that maximum, before or during an encounter. It leaves temp HP unchanged and counts as a stat correction rather than damage.
 
-**Damage taken**:
-The cumulative HP lost by an NPC in the encounter, including damage absorbed by temp HP. Players see this total beside its name regardless of health mode. Healing never subtracts from it, and max HP corrections do not count as damage. It resets when a new encounter starts; older tokens without a saved total start at 0.
-
 **Bloodied**:
 Health status of a combatant below half its max HP.
 

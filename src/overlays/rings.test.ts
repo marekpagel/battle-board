@@ -22,7 +22,7 @@ const fakeRing: RingFactory = (shape) => ({
 }) as unknown as Item;
 
 const c = (id: string, extra: Partial<Combatant> = {}): Combatant => ({
-    id, name: id, initiative: 0, initiativeBonus: 0, groupInitiativeBonus: 0, damageTaken: 0, active: false, visible: true, ac: 10, currentHP: 10, maxHP: 10, tempHP: 0,
+    id, name: id, initiative: 0, initiativeBonus: 0, groupInitiativeBonus: 0, active: false, visible: true, ac: 10, currentHP: 10, maxHP: 10, tempHP: 0,
     movement: 30, attackRange: 60, elevation: 0, playerCharacter: false, ownerId: "gm", ...extra,
 });
 

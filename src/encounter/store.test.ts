@@ -353,7 +353,7 @@ describe("initiative rolls and HP taps", () => {
         });
         await Promise.all([store.setHP("a", 20), store.adjustHP("a", -5), store.setHP("a", 0, "temp")]);
         await flush();
-        expect(meta("a")).toMatchObject({ currentHP: 20, tempHP: 0, damageTaken: 15 });
+        expect(meta("a")).toMatchObject({ currentHP: 20, tempHP: 0 });
         expect(checks).toEqual([
             { message: { type: "CHECK_NEEDED", tokenId: "a", tokenName: "a", dc: 10 }, hp: 25 },
             { message: { type: "CHECK_NEEDED", tokenId: "a", tokenName: "a", dc: 10 }, hp: 20 },
@@ -367,9 +367,9 @@ describe("initiative rolls and HP taps", () => {
         await store.setHP("a", 20, "max");
         expect(meta("a")).toMatchObject({ currentHP: 20, maxHP: 20 });
         await Promise.all([store.start(), store.setHP("a", 30, "max")]);
-        expect(meta("a")).toMatchObject({ currentHP: 30, maxHP: 30, damageTaken: 0 });
+        expect(meta("a")).toMatchObject({ currentHP: 30, maxHP: 30 });
         await store.setHP("a", 15, "max");
-        expect(meta("a")).toMatchObject({ currentHP: 15, maxHP: 15, damageTaken: 0 });
+        expect(meta("a")).toMatchObject({ currentHP: 15, maxHP: 15 });
     });
 
     it("does not announce concentration checks when an HP write fails", async () => {
@@ -499,74 +499,18 @@ it("locks player initiative during the encounter and unlocks it when the encount
     expect(meta("pc").initiative).toBe(20);
 });
 
-describe("NPC damage taken", () => {
-    it("accumulates button and typed damage, including temp HP, without subtracting healing", async () => {
-        const { store, meta } = await setup([
-            makeToken({ id: "npc", metadata: saved({ currentHP: 30, maxHP: 30, tempHP: 5 }) }),
-        ]);
-        await store.start();
-        await store.adjustHP("npc", -5);
-        expect(meta("npc")).toMatchObject({ currentHP: 30, tempHP: 0, damageTaken: 5 });
-        await store.patch("npc", { currentHP: 20 });
-        await store.adjustHP("npc", 5);
-        expect(meta("npc")).toMatchObject({ currentHP: 25, damageTaken: 15 });
-        await store.patch("npc", { currentHP: 30, tempHP: 3 });
-        expect(meta("npc").damageTaken).toBe(15);
-        await store.patch("npc", { tempHP: 0 });
-        expect(meta("npc").damageTaken).toBe(18);
-        await store.patch("npc", { currentHP: 30 });
-        await store.adjustHP("npc", -1);
-        expect(meta("npc").damageTaken).toBe(19);
-    });
-
-    it("keeps the total across reopening and re-adding a combatant, then resets for a new encounter", async () => {
-        const { store, port, meta } = await setup([
-            makeToken({ id: "npc", metadata: saved({ currentHP: 20, maxHP: 30, damageTaken: 12 }) }),
-        ]);
-        const reopened = createEncounterStore(port);
-        reopened.subscribe(() => {});
-        await flush();
-        expect(reopened.getState().combatants[0].damageTaken).toBe(12);
-        await store.remove(["npc"]);
-        await store.add(["npc"]);
-        expect(meta("npc").damageTaken).toBe(12);
-        await store.start();
-        expect(meta("npc").damageTaken).toBe(0);
-        await store.adjustHP("npc", -5);
-        await store.end();
-        expect(meta("npc").damageTaken).toBe(5);
-        await store.start();
-        expect(meta("npc").damageTaken).toBe(0);
-        reopened.dispose();
-    });
-
-    it("does not count stat corrections or PC damage and defaults older saves to zero", async () => {
-        const { store, meta } = await setup([
-            makeToken({ id: "npc", metadata: saved({ currentHP: 30, maxHP: 30 }) }),
-            makeToken({ id: "pc", metadata: saved({ playerCharacter: true }) }),
-        ]);
-        expect(store.getState().combatants.every((c) => c.damageTaken === 0)).toBe(true);
-        await store.patch("npc", { maxHP: 20, currentHP: 20 });
-        expect(meta("npc").damageTaken).toBeUndefined();
-        await store.adjustHP("pc", -5);
-        expect(meta("pc").damageTaken).toBeUndefined();
-        await Promise.all([store.adjustHP("npc", -1), store.adjustHP("npc", -1)]);
-        expect(meta("npc").damageTaken).toBe(2);
-    });
-});
-
-it("applies rapid temporary HP taps, counts damage and preserves the total when temp HP increases", async () => {
+it("applies rapid temporary HP taps and spills excess damage into current HP", async () => {
     const { store, meta } = await setup([
         makeToken({ id: "npc", metadata: saved({ currentHP: 20, maxHP: 20, tempHP: 8 }) }),
     ]);
     await Promise.all([store.adjustHP("npc", -5, "temp"), store.adjustHP("npc", -1, "temp")]);
-    expect(meta("npc")).toMatchObject({ tempHP: 2, currentHP: 20, damageTaken: 6 });
+    expect(meta("npc")).toMatchObject({ tempHP: 2, currentHP: 20 });
     await store.adjustHP("npc", 5, "temp");
     await store.adjustHP("npc", 1, "temp");
-    expect(meta("npc")).toMatchObject({ tempHP: 8, currentHP: 20, damageTaken: 6 });
+    expect(meta("npc")).toMatchObject({ tempHP: 8, currentHP: 20 });
     await store.adjustHP("npc", -5, "temp");
     await store.adjustHP("npc", -5, "temp");
-    expect(meta("npc")).toMatchObject({ tempHP: 0, currentHP: 18, damageTaken: 16 });
+    expect(meta("npc")).toMatchObject({ tempHP: 0, currentHP: 18 });
 });
 
 describe("named profiles when joining initiative", () => {
@@ -639,14 +583,14 @@ describe("named profiles when joining initiative", () => {
     it("uses the displayed token label as the profile name and preserves prepped and returning tokens", async () => {
         const { store, port, meta } = await setup([
             makeToken({ id: "template", name: "Goblin", metadata: saved({ maxHP: 7, ac: 15 }) }),
-            makeToken({ id: "prepped", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, ac: 17, inInitiative: false, damageTaken: 8 }) }),
+            makeToken({ id: "prepped", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, ac: 17, inInitiative: false }) }),
             makeToken({ id: "fresh", name: "asset-name" }),
         ]);
         await port.items.update(["fresh"], (items) => { (items[0] as ReturnType<typeof makeToken>).text.plainText = "Goblin"; });
         await store.saveProfile("template");
         await store.add(["prepped", "fresh"]);
         expect(meta("fresh")).toMatchObject({ maxHP: 7, ac: 15, currentHP: 7 });
-        expect(meta("prepped")).toMatchObject({ currentHP: 2, maxHP: 20, ac: 17, damageTaken: 8 });
+        expect(meta("prepped")).toMatchObject({ currentHP: 2, maxHP: 20, ac: 17 });
         await store.adjustHP("fresh", -1);
         await store.remove(["fresh"]);
         await store.add(["fresh"]);
@@ -656,11 +600,11 @@ describe("named profiles when joining initiative", () => {
     it("explicitly loads permanent stats without copying encounter state or other token settings", async () => {
         const { store, meta } = await setup([
             makeToken({ id: "template", name: "Goblin", metadata: saved({ maxHP: 12, ac: 16, movement: 40, initiativeBonus: 3, currentHP: 1, tempHP: 4 }) }),
-            makeToken({ id: "existing", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, tempHP: 5, damageTaken: 9, active: true, initiative: 17, groupId: "g", movementColor: "#123456" }) }),
+            makeToken({ id: "existing", name: "Goblin", metadata: saved({ currentHP: 2, maxHP: 20, tempHP: 5, active: true, initiative: 17, groupId: "g", movementColor: "#123456" }) }),
         ]);
         await store.saveProfile("template");
         await store.loadProfile("existing");
-        expect(meta("existing")).toMatchObject({ currentHP: 12, maxHP: 12, ac: 16, movement: 40, initiativeBonus: 3, tempHP: 5, damageTaken: 9, active: true, initiative: 17, groupId: "g", movementColor: "#123456" });
+        expect(meta("existing")).toMatchObject({ currentHP: 12, maxHP: 12, ac: 16, movement: 40, initiativeBonus: 3, tempHP: 5, active: true, initiative: 17, groupId: "g", movementColor: "#123456" });
         await expect(store.loadProfile("missing")).rejects.toThrow("no longer");
     });
 

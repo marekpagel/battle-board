@@ -105,7 +105,7 @@ export function createEncounterStore(port: ObrPort) {
             await port.items.update([id], (items) => {
                 for (const item of items) {
                     const meta = savedMeta(item);
-                    if (meta) applyCombatantPatch(meta, patch);
+                    if (meta) Object.assign(meta, patch);
                 }
             });
             if (concentrationCheck) await announceConcentrationCheck(port, combatant, concentrationCheck.dc);
@@ -289,7 +289,7 @@ export function createEncounterStore(port: ObrPort) {
             await port.items.update(list, (items) => {
                 for (const item of items) {
                     const meta = savedMeta(item);
-                    if (meta) applyCombatantPatch(meta, fields);
+                    if (meta) Object.assign(meta, fields);
                 }
             });
         },
@@ -517,10 +517,7 @@ export function createEncounterStore(port: ObrPort) {
             const state = await turnSnapshot();
             const change = turns.start(state);
             if (!change) return;
-            await writeWithTurn(state, state.combatants.map((c) => c.id), (meta) => {
-                clearResources(meta);
-                meta.damageTaken = 0;
-            }, change);
+            await writeWithTurn(state, idsWithResources(state.combatants), clearResources, change);
             await setClock(true, 1);
         }),
 
@@ -657,17 +654,4 @@ function takeIndex(next: Map<string, number>, groupId: string): number {
     const i = next.get(groupId) ?? 0;
     next.set(groupId, i + 1);
     return i;
-}
-
-
-/** Accumulate actual HP loss, including temp HP, on the saved token in the same write. */
-function applyCombatantPatch(meta: MetaShape, fields: CombatantPatch) {
-    // Max HP edits are stat corrections rather than attacks.
-    if (!meta.playerCharacter && fields.maxHP === undefined) {
-        const before = meta.currentHP + meta.tempHP;
-        const after = (fields.currentHP ?? meta.currentHP) + (fields.tempHP ?? meta.tempHP);
-        const damage = Math.max(0, before - after);
-        if (damage > 0) meta.damageTaken = (Number.isFinite(meta.damageTaken) ? Math.max(0, meta.damageTaken ?? 0) : 0) + damage;
-    }
-    Object.assign(meta, fields);
 }

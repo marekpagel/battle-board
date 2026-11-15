@@ -277,11 +277,6 @@ export default function PlayerRow({
                             </Box>
                         )}
                     </Box>
-                    {!row.playerCharacter && (
-                        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
-                            Damage taken: {row.damageTaken}
-                        </Typography>
-                    )}
                 </TableCell>
 
                 {/* Health */}

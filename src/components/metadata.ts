@@ -20,8 +20,6 @@ export type MetaShape = {
     // combat stats
     ac: number;
     currentHP: number;
-    /** Cumulative NPC damage in this encounter; healing does not subtract from it. */
-    damageTaken?: number;
     maxHP: number;
     tempHP: number;
 

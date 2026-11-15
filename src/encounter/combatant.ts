@@ -15,8 +15,6 @@ export type Combatant = {
     visible: boolean;
     ac: number;
     currentHP: number;
-    /** Cumulative NPC damage in this encounter; healing does not subtract from it. */
-    damageTaken: number;
     maxHP: number;
     tempHP: number;
     movement: number;
@@ -69,7 +67,6 @@ export function toCombatant(item: Item): Combatant | null {
         visible: typeof item.visible === "boolean" ? item.visible : meta.visible,
         ac: meta.ac,
         currentHP: meta.currentHP,
-        damageTaken: Number.isFinite(meta.damageTaken) ? Math.max(0, meta.damageTaken ?? 0) : 0,
         maxHP: meta.maxHP,
         tempHP: meta.tempHP,
         movement: meta.movement,
