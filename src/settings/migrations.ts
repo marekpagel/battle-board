@@ -13,6 +13,7 @@ export async function runSavedDataMigrations(port: ObrPort) {
     await moveSceneSettingsToRoom(port);
     await moveSceneGroupsToTokens(port);
     await removeRetiredHealthMarkers(port);
+    await removeRetiredDistanceLines(port);
 }
 
 /** Settings used to live in each scene; the room now holds them. */
@@ -68,6 +69,15 @@ async function moveSceneGroupsToTokens(port: ObrPort) {
 /** Retire the shared emoji badges now replaced by viewer-specific health overlays. */
 async function removeRetiredHealthMarkers(port: ObrPort) {
     const key = getPluginId("health-marker");
+    const ids = (await port.items.get())
+        .filter((item) => item.id.startsWith(`${key}.`) || item.metadata[key])
+        .map((item) => item.id);
+    if (ids.length) await port.items.delete(ids);
+}
+
+/** Remove shared lines, rulers and labels left by the retired distance feature. */
+async function removeRetiredDistanceLines(port: ObrPort) {
+    const key = getPluginId("distance-line");
     const ids = (await port.items.get())
         .filter((item) => item.id.startsWith(`${key}.`) || item.metadata[key])
         .map((item) => item.id);

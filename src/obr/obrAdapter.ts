@@ -50,8 +50,6 @@ export const obrAdapter: ObrPort = {
             const scale = await OBR.scene.grid.getScale();
             return { multiplier: scale.parsed?.multiplier ?? 5, unit: String(scale.parsed?.unit ?? "ft") };
         },
-        getMeasurement: () => OBR.scene.grid.getMeasurement(),
-        getDistance: (from, to) => OBR.scene.grid.getDistance(from, to),
         onChange: (callback) => OBR.scene.grid.onChange(() => callback()),
     },
 };

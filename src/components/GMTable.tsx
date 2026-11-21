@@ -11,6 +11,10 @@ import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreRounded from "@mui/icons-material/ExpandMoreRounded";
 import InitiativeRow from "./InitiativeRow";
 import GroupRow from "./GroupRow";
 import { PlayArrowRounded } from "@mui/icons-material";
@@ -23,7 +27,7 @@ import type { Combatant, CombatantPatch } from "../encounter";
 import type { InitiativeSettings } from "../settings";
 import type { Group } from "../encounter";
 import type { CMToken } from "./tokens";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { canPrev, stagedGroups, turnOrder, type Turn } from "../encounter/turnOrder";
 import StopRounded from "@mui/icons-material/StopRounded";
 
@@ -108,6 +112,7 @@ export default function GmTable({
         };
     }, [items, groups]);
 
+    const stagedSectionId = useId();
     const prevDisabled = !canPrev({ combatants: items, groups, started, round });
 
     // Staging and ungrouping change row counts; the store handles the turn.
@@ -189,7 +194,6 @@ export default function GmTable({
                                     settings={{
                                         showMovementRange: settings.showMovementRange,
                                         showConditions: settings.showConditions,
-                                        showDistances: settings.showDistances,
                                         showAC,
                                         showHP,
                                         showDMR,
@@ -226,7 +230,6 @@ export default function GmTable({
                                     settings={{
                                         showMovementRange: settings.showMovementRange,
                                         showConditions: settings.showConditions,
-                                        showDistances: settings.showDistances,
                                         showAC,
                                         showHP,
                                         showDMR,
@@ -398,82 +401,97 @@ export default function GmTable({
 
             {/* Staged Groups Section - Below control bar */}
             {stagedRenderItems.length > 0 && (
-                <TableContainer
-                    component={Paper}
+                <Accordion
+                    disableGutters
+                    square
+                    elevation={0}
+                    slotProps={{ transition: { onEntering: onRequestResize, onEntered: onRequestResize, onExited: onRequestResize } }}
                     sx={{
-                        borderRadius: 0,
                         borderTop: 1,
                         borderColor: "divider",
                         flexShrink: 0,
-                        overflow: "auto",
+                        "&:before": { display: "none" },
                     }}
                 >
-                    <Table
-                        size="small"
-                        sx={{
-                            tableLayout: "fixed",
-                            minWidth: 420,
-                            width: "100%",
-                            "& td, & th": { py: 0.25, px: 0.25 },
-                            "& thead th": { fontSize: "0.72rem", letterSpacing: 0.4, py: 0.9, height: 28 },
-                        }}
+                    <AccordionSummary
+                        id={`${stagedSectionId}-header`}
+                        aria-controls={`${stagedSectionId}-content`}
+                        expandIcon={<ExpandMoreRounded fontSize="small" />}
+                        sx={{ px: 1, minHeight: 36, "& .MuiAccordionSummary-content": { my: 0.5 } }}
                     >
-                        {/* Hidden header to maintain column widths */}
-                        <colgroup>
-                            <col style={{ width: "22px" }} />
-                            <col style={{ width: "64px" }} />
-                            <col />
-                            {showAC && <col style={{ width: "36px" }} />}
-                            {showHP && <col style={{ width: "92px" }} />}
-                            {showHP && <col style={{ width: `${tempHPWidth}px` }} />}
-                            {showConc && <col style={{ width: "28px" }} />}
-                            {showDMR && <col style={{ width: "24px" }} />}
-                        </colgroup>
-                        <TableBody>
-                            {stagedRenderItems.map((renderItem) => {
-                                if (renderItem.type === 'group') {
-                                    return (
-                                        <GroupRow
-                                            key={`staged-group-${renderItem.group.id}`}
-                                            group={renderItem.group}
-                                            items={renderItem.items}
-                                            expanded={expandedIds.has(`group-${renderItem.group.id}`)}
-                                            onToggleExpand={() => {
-                                                onToggleExpand(`group-${renderItem.group.id}`);
-                                                onRequestResize?.();
-                                            }}
-                                            onRowChange={onRowChange}
-                                            onRowRemove={onRowRemove}
-                                            settings={{
-                                                showMovementRange: settings.showMovementRange,
-                                                showConditions: settings.showConditions,
-                                                showDistances: settings.showDistances,
-                                                showAC,
-                                                showHP,
-                                                showDMR,
-                                                showConc,
-                                            }}
-                                            globalSettings={globalSettings}
-                                            started={started}
-                                            tokens={tokens}
-                                            colSpan={gmColCount}
-                                            groups={groups}
-                                            expandedIds={expandedIds}
-                                            onToggleItemExpand={(itemId) => {
-                                                onToggleExpand(itemId);
-                                                onRequestResize?.();
-                                            }}
-                                            staged={renderItem.staged}
-                                            onGroupStagingToggle={handleGroupChanged}
-                                            onGroupUngroup={handleGroupChanged}
-                                        />
-                                    );
-                                }
-                                return null; // Staged section should only have groups
-                            })}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                        <Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                            Staged groups ({stagedRenderItems.length})
+                        </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ p: 0 }}>
+                        <TableContainer sx={{ overflow: "auto" }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    tableLayout: "fixed",
+                                    minWidth: 420,
+                                    width: "100%",
+                                    "& td, & th": { py: 0.25, px: 0.25 },
+                                    "& thead th": { fontSize: "0.72rem", letterSpacing: 0.4, py: 0.9, height: 28 },
+                                }}
+                            >
+                                {/* Hidden header to maintain column widths */}
+                                <colgroup>
+                                    <col style={{ width: "22px" }} />
+                                    <col style={{ width: "64px" }} />
+                                    <col />
+                                    {showAC && <col style={{ width: "36px" }} />}
+                                    {showHP && <col style={{ width: "92px" }} />}
+                                    {showHP && <col style={{ width: `${tempHPWidth}px` }} />}
+                                    {showConc && <col style={{ width: "28px" }} />}
+                                    {showDMR && <col style={{ width: "24px" }} />}
+                                </colgroup>
+                                <TableBody>
+                                    {stagedRenderItems.map((renderItem) => {
+                                        if (renderItem.type === 'group') {
+                                            return (
+                                                <GroupRow
+                                                    key={`staged-group-${renderItem.group.id}`}
+                                                    group={renderItem.group}
+                                                    items={renderItem.items}
+                                                    expanded={expandedIds.has(`group-${renderItem.group.id}`)}
+                                                    onToggleExpand={() => {
+                                                        onToggleExpand(`group-${renderItem.group.id}`);
+                                                        onRequestResize?.();
+                                                    }}
+                                                    onRowChange={onRowChange}
+                                                    onRowRemove={onRowRemove}
+                                                    settings={{
+                                                        showMovementRange: settings.showMovementRange,
+                                                        showConditions: settings.showConditions,
+                                                        showAC,
+                                                        showHP,
+                                                        showDMR,
+                                                        showConc,
+                                                    }}
+                                                    globalSettings={globalSettings}
+                                                    started={started}
+                                                    tokens={tokens}
+                                                    colSpan={gmColCount}
+                                                    groups={groups}
+                                                    expandedIds={expandedIds}
+                                                    onToggleItemExpand={(itemId) => {
+                                                        onToggleExpand(itemId);
+                                                        onRequestResize?.();
+                                                    }}
+                                                    staged={renderItem.staged}
+                                                    onGroupStagingToggle={handleGroupChanged}
+                                                    onGroupUngroup={handleGroupChanged}
+                                                />
+                                            );
+                                        }
+                                        return null; // Staged section should only have groups
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </AccordionDetails>
+                </Accordion>
             )}
         </Box>
     );

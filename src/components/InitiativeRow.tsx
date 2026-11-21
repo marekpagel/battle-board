@@ -4,24 +4,20 @@ import { InitiativeBonusField, InitiativeRollButton } from "./InitiativeControls
 import { useMemo, useRef, useCallback } from "react";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
-import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
-import Stack from "@mui/material/Stack";
 import VisibilityOffRounded from "@mui/icons-material/VisibilityOffRounded";
 import RadarRounded from "@mui/icons-material/RadarRounded";
 import Checkbox from "@mui/material/Checkbox";
 
 import type { Combatant, CombatantPatch } from "../encounter";
 import { CommitNumberField } from "./CommitFields";
-import { DistancePanel } from "./DistancePanel";
 import { RingControls } from "./RingControls";
 import type { CMToken } from "./tokens";
-import { useDistances } from "../hooks/useDistances";
 import { useRingState } from "../hooks/useRingState";
 import type { InitiativeSettings } from "../settings";
 import type { Group } from "../encounter";
@@ -33,7 +29,6 @@ import { focusToken } from "./focusToken";
 type RowSettings = {
     showMovementRange: boolean;
     showConditions: boolean;
-    showDistances: boolean;
     showAC: boolean;
     showHP: boolean;
     showDMR: boolean;
@@ -88,7 +83,6 @@ export default function InitiativeRow({
     const dmPreview = !!row.dmPreview;
 
     // Centralized hooks
-    const distances = useDistances(row.id, tokens, !!settings?.showDistances && !!expanded, globalSettings.roundDistances);
     const { config } = useRingState(row);
 
 
@@ -114,7 +108,6 @@ export default function InitiativeRow({
         hp: settings?.showHP ?? true,
         move: settings?.showMovementRange ?? true,
         conditions: settings?.showConditions ?? true,
-        distances: settings?.showDistances ?? true,
         dmr: settings?.showDMR ?? true,
         conc: settings?.showConc ?? false,
     }), [settings]);
@@ -491,23 +484,11 @@ export default function InitiativeRow({
                         <Box sx={{ px: 1, pb: 1 }}>
                             <ProfileControls row={row} />
                             <InitiativeBonusField id={row.id} bonus={row.initiativeBonus} />
-                            <Stack direction="row" spacing={1.5} alignItems="stretch">
-                                {/* Left: Ring Controls */}
-                                <RingControls
-                                    row={row}
-                                    config={config}
-                                    onUpdate={bubble}
-                                />
-
-                                <Divider orientation="vertical" flexItem />
-
-                                {/* Right: Distances */}
-                                {vis.distances ? (
-                                    <DistancePanel distances={distances} />
-                                ) : (
-                                    <Box sx={{ flex: 1, minWidth: 0 }} />
-                                )}
-                            </Stack>
+                            <RingControls
+                                row={row}
+                                config={config}
+                                onUpdate={bubble}
+                            />
                         </Box>
                     </Collapse>
                 </TableCell>

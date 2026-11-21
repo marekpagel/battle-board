@@ -1,6 +1,6 @@
 # Battle Board
 
-An Owlbear Rodeo extension for running combat encounters: initiative order, turns and rounds, health, range rings, elevation and distances between tokens on the map.
+An Owlbear Rodeo extension for running combat encounters: initiative order, turns and rounds, health, movement rings and elevation on the map.
 
 ## Language
 
@@ -45,7 +45,7 @@ Reusable permanent stats saved in the room under a token's name: max HP, speed, 
 ### Groups
 
 **Group**:
-Several combatants that share one turn and one initiative. Grouping affects only turn order: each member is still its own token on the map, with its own distances, rings and elevation. A group exists only as a property of its member tokens.
+Several combatants that share one turn and one initiative. Grouping affects only turn order: each member is still its own token on the map, with its own rings and elevation. A group exists only as a property of its member tokens.
 _Avoid_: Encounter group, encounters (legacy names)
 
 **Member order**:
@@ -60,7 +60,7 @@ Dissolve a group so each member takes its own turn.
 ### Combatants
 
 **PC**:
-A combatant controlled by a player. Determines turn rings, which health visibility rule applies, and whether players may edit its HP. PCs always appear in the player tracker, including before an encounter starts and when the general player list is disabled. Players may enter PC initiative only while the encounter has not started; during the encounter it is read-only.
+A combatant controlled by a player. Determines turn rings, which health visibility rule applies, and whether players may edit its HP. PCs always appear in the player tracker, including before an encounter starts and when the general player list is disabled. Players may enter PC initiative only while the encounter has not started; during the encounter it is read-only. Player tracker rows do not expand.
 _Avoid_: Player character flag, hero
 
 **NPC**:
@@ -103,7 +103,7 @@ A combatant saying it has finished. The turn advances once every counted member 
 The height of a token's bottom face above the map, in scene units; may be negative.
 
 **Movement ring**:
-A circle around a combatant showing how far it can move this turn.
+A circle around an active combatant showing how far it can move this turn, left at its start-of-turn position. PC rings are visible to everyone; NPC rings are visible only to the GM. The movement-ring settings apply to both, and every active member of a group gets its own ring.
 
 **Map health bar**:
 A compact overlay below each token with saved health data, including tokens outside initiative. The GM sees an HP bar, current/max HP, and temp HP. Players see their configured PC/NPC health mode, with no overlays when the master health switch is off. Bars are local to each viewer, update while the tracker is open, and disappear when it closes.

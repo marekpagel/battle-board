@@ -19,7 +19,6 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 
 import type { HealthMode, InitiativeSettings } from "../settings";
-import { useGrid } from "../hooks/useGrid";
 import { encounterStore } from "../encounter";
 import type { Combatant } from "../encounter";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -200,7 +199,6 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
 
     // Local expansion state for sub-categories
     const [openDisplayColumns, setOpenDisplayColumns] = useState(false);
-    const [openDisplayInfo, setOpenDisplayInfo] = useState(false);
     const [openPlayerColumns, setOpenPlayerColumns] = useState(false);
 
     //Local for confirm ring
@@ -275,9 +273,6 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
 
     // Resolve UI defaults without forcing state writes yet
     const { pcHealthMode, npcHealthMode } = value;
-    const grid = useGrid();
-    // Lines skip anything within two cells: "10ft" on a standard 5ft grid
-    const lineThresholdText = grid ? `${grid.unitsPerCell * 2}${grid.unitLabel}` : "2 cells";
 
     return (
         <Paper ref={rootRef} sx={{ borderRadius: 0, overflowX: "hidden" }}>
@@ -450,70 +445,12 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                                 <Divider />
                                 <RowShell
                                     title="Movement Rings"
-                                    description="PC movement rings on turn."
+                                    description="On turn: PCs for everyone, NPCs for the DM."
                                     right={
                                         <Toggle
                                             checked={!!value.showRangeRings}
                                             onChange={(next) => set({ showRangeRings: next })}
                                             aria-label="toggle-show-range-rings"
-                                        />
-                                    }
-                                />
-
-                                {/* Distance Lines (independent row) */}
-                                <Divider />
-                                <RowShell
-                                    title="Distance Lines"
-                                    description={`PC lines on turn, for distances >${lineThresholdText}.`}
-                                    right={
-                                        <Toggle
-                                            checked={!!value.showDistanceLines}
-                                            onChange={(next) => set({ showDistanceLines: next })}
-                                            aria-label="toggle-show-distance-lines"
-                                        />
-                                    }
-                                />
-                            </AccordionDetails>
-                        </Accordion>
-
-                        {/* Info Panel (Accordion) */}
-                        <Accordion
-                            elevation={0}
-                            disableGutters
-                            square
-                            expanded={openDisplayInfo}
-                            onChange={(_, exp) => setOpenDisplayInfo(exp)}
-                            sx={{
-                                border: (t) => `1px solid ${t.palette.divider}`,
-                                borderRadius: 1,
-                                mt: 1,
-                                "&:before": { display: "none" },
-                            }}
-                        >
-                            <AccordionSummary expandIcon={<ExpandMoreRounded />} sx={{ px: 1, minHeight: 38 }}>
-                                <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>Info Panel</Typography>
-                            </AccordionSummary>
-                            <AccordionDetails sx={{ p: 0 }}>
-                                <RowShell
-                                    title="Distances"
-                                    description="Show distances table."
-                                    right={
-                                        <Toggle
-                                            checked={!!value.showDistances}
-                                            onChange={(next) => set({ showDistances: next })}
-                                            aria-label="toggle-distances"
-                                        />
-                                    }
-                                />
-                                <Divider />
-                                <RowShell
-                                    title="Round Distances"
-                                    description="Round to nearest grid unit."
-                                    right={
-                                        <Toggle
-                                            checked={!!value.roundDistances}
-                                            onChange={(next) => set({ roundDistances: next })}
-                                            aria-label="toggle-round-distances"
                                         />
                                     }
                                 />

@@ -1,11 +1,10 @@
 # Battle Board - Initiative Tracker & Combat Manager
 
-Battle Board is a powerful initiative tracker and combat management system for [Owlbear Rodeo](https://www.owlbear.rodeo). It transforms your tokens into a comprehensive combat interface with automatic range overlays, real-time distance calculations, health tracking, and advanced group management—all seamlessly integrated with your scene.
+Battle Board is a powerful initiative tracker and combat management system for [Owlbear Rodeo](https://www.owlbear.rodeo). It transforms your tokens into a comprehensive combat interface with automatic range overlays, health tracking, and advanced group management—all seamlessly integrated with your scene.
 
 ## Key Features
 - **Smart Initiative System** with decimal tie-breaking
-- **Automatic Range Overlays** for movement and attack ranges
-- **Real-time Distance Calculations** between all tokens with elevation support
+- **Automatic Movement Overlays** for active combatants
 - **Elevation Tracking** for flying creatures and vertical combat
 - **Advanced Group Management** with staging capabilities
 - **Comprehensive Health Tracking** with customizable player visibility
@@ -22,7 +21,7 @@ Battle Board is a powerful initiative tracker and combat management system for [
 3. **Open the Battle Board sidebar** from your extensions
 4. **Click "Start"** to begin initiative and start tracking turns
 
-That's it! You now have a fully functional initiative tracker with automatic range overlays and distance calculations.
+That's it! You now have a fully functional initiative tracker with automatic range overlays.
 
 ### First Combat Setup
 - Use **"Add All in Scene"** to quickly add multiple tokens
@@ -180,9 +179,7 @@ Battle Board can automatically draw range indicators around tokens:
 - Unattached circles showing movement range
 - Stay in place when tokens move (tactical positioning)
 
-**Attack Range Rings (Red, Dashed):**
-- Attached rounded rectangles following token shape
-- Move with the token for dynamic range visualization
+PC movement rings are visible to everyone. NPC movement rings appear only to the DM on their turn, including each active member of a group.
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/range-overlays.png" alt="Range Overlays" style="max-width: 100%; height: auto;">
 
@@ -204,25 +201,6 @@ Expand any token row to access full styling controls:
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/ring-customization.png" alt="Ring Customization" style="max-width: 100%; height: auto;">
 
-### Distance Calculations
-
-#### Automatic Distance Panel
-When you expand a token row, Battle Board calculates distances to all other tokens:
-
-- **Edge-to-edge measurement** (not center-to-center)
-- **Sorted by proximity** (closest first)
-- **"Touch" indicator** for adjacent tokens (< 5ft)
-- **Real-time updates** as tokens move
-- **Elevation-aware** - Accounts for vertical distance when tokens have different elevations
-
-<img src="https://battle-board.missinglinkdev.com/screenshots/distance-panel.png" alt="Distance Panel" style="max-width: 100%; height: auto;">
-
-#### Smart Measurements
-- Distances account for token size (not just position)
-- Uses Owlbear Rodeo's grid measurement system
-- Supports all measurement modes (Chebyshev, Euclidean, etc.)
-- Automatically includes elevation differences in distance calculations
-
 ### Elevation Tracking
 
 #### Setting Elevation
@@ -236,15 +214,10 @@ Battle Board supports full 3D combat with elevation tracking for flying creature
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/elevation-menu.png" alt="Elevation Menu" style="max-width: 100%; height: auto;">
 
-**Elevation-Aware Distance Calculations:**
-- All distance calculations automatically account for elevation differences
-- Perfect for flying creatures, elevated platforms, and multi-level encounters
-- Works with all grid measurement modes
-
 **Common Use Cases:**
 - **Flying Creatures** - Set elevation for dragons, flying PCs, or hovering enemies
 - **Elevated Platforms** - Track characters on balconies, towers, or cliffs
-- **Environmental Hazards** - Track distance to flying hazards or elevated threats
+- **Environmental Hazards** - Mark the elevation of flying hazards or elevated threats
 
 ### Group Management
 
@@ -340,7 +313,6 @@ The GM has granular control over what players can see:
 - **Initiative List Visibility** - Show/hide entire list
 - **Health Information** - None/Status/Numbers per creature type
 - **Range Rings** - Enable for Player Characters during their turn
-- **Distance Information** - Available in player expanded views
 
 ---
 
@@ -369,12 +341,9 @@ Configure what players can see:
 - **NPCs:** None / Status / Numbers
 
 **Range Ring Display:**
-- Show movement/attack rings for active Player Characters
+- Show movement rings on turn: PCs for everyone, NPCs only for the DM
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/settings-player-columns.png" alt="Settings - Player Columns" style="max-width: 100%; height: auto;">
-
-#### Info Panel Settings
-- **Distance Calculations** - Enable/disable the distance panel in expanded rows
 
 #### Gameplay Settings
 - **Player Initiative List** - Show/hide the entire initiative interface from players
@@ -416,10 +385,9 @@ Battle Board saves all information directly to your scene and token metadata:
 - **Monitor status colors** - Green/Yellow/Red provide quick visual health assessment
 
 ### Range Management
-- **Start with defaults** - Green movement, red attack ranges work well
+- **Start with defaults** - Green dashed movement rings show available movement
 - **Use DM previews for planning** - Toggle rings to visualize encounter positioning
 - **Customize per creature type** - Different colors for different monster abilities
-- **Test range interactions** - Use distance calculations to verify attack possibilities
 
 ### Group Strategies
 
@@ -438,7 +406,6 @@ Battle Board saves all information directly to your scene and token metadata:
 ### Large Combat Management
 - **Bulk add tokens** first, then organize into logical groups
 - **Use player visibility settings** to reduce information overload
-- **Leverage distance calculations** for quick tactical decisions  
 - **Stage complex encounters** in phases rather than overwhelming players
 
 ### Player Experience

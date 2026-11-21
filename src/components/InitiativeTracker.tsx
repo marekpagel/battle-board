@@ -18,7 +18,6 @@ import { runSavedDataMigrations } from "../settings/migrations";
 import { obrAdapter } from "../obr/obrAdapter";
 import { registerInitiativeContextMenu } from "./initiativeMenu";
 import { useRingSync } from "../hooks/useRingSync";
-import { useDistanceLineSync } from "../hooks/useDistanceLineSync";
 import { useConcentrationNotifications } from "../hooks/useConcentrationNotifications";
 import { useHealthBars } from "../hooks/useHealthBars";
 import { useInitiativeBadges } from "../hooks/useInitiativeBadges";
@@ -51,7 +50,6 @@ export function InitiativeTracker() {
     } = useInitiativeState();
 
     useRingSync(ready);
-    useDistanceLineSync(ready);
     useElevationLabels(ready);
     useHealthBars(ready, role);
     useInitiativeBadges(ready, role);

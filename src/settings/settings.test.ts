@@ -9,6 +9,13 @@ import { createSettingsStore } from "./store";
 import { runSavedDataMigrations } from "./migrations";
 
 describe("migrateSettings", () => {
+    it("ignores retired distance settings while preserving supported settings", () => {
+        const settings = migrateSettings({ showDistances: true, roundDistances: true, showDistanceLines: true, turnBar: true });
+        expect(settings).toEqual({ ...DEFAULT_SETTINGS, turnBar: true });
+        expect(settings).not.toHaveProperty("showDistances");
+        expect(settings).not.toHaveProperty("roundDistances");
+        expect(settings).not.toHaveProperty("showDistanceLines");
+    });
     it("fills settings an older version never saved with defaults", () => {
         expect(migrateSettings({ showHP: false })).toEqual({ ...DEFAULT_SETTINGS, showHP: false });
         expect(migrateSettings(undefined)).toEqual(DEFAULT_SETTINGS);
@@ -103,5 +110,23 @@ describe("saved-data migrations", () => {
         const scene = createFakeScene({ items: [grouped()], sceneMetadata: legacyScene });
         await runSavedDataMigrations(scene.connect("PLAYER"));
         expect(scene.writes).toEqual([]);
+    });
+
+    it("removes saved distance overlays only on GM clients and leaves unrelated items intact", async () => {
+        const key = getPluginId("distance-line");
+        const scene = createFakeScene({ items: [
+            grouped(), makeToken({ id: `${key}.a.b.line` }), makeToken({ id: `${key}.a.b.label` }),
+            makeToken({ id: `${key}.a.c.ruler` }),
+            makeToken({ id: "copied-distance-label", metadata: { [key]: { __distanceLine__: true } } }),
+            makeToken({ id: "manual-ruler" }), makeToken({ id: getPluginId("elevation-label.a") }),
+        ] });
+        await runSavedDataMigrations(scene.connect("PLAYER"));
+        expect(scene.writes).toEqual([]);
+        const gm = scene.connect("GM");
+        await runSavedDataMigrations(gm);
+        expect(scene.peek().items.map((item) => item.id)).toEqual(["a", "manual-ruler", getPluginId("elevation-label.a")]);
+        const writes = scene.writes.length;
+        await runSavedDataMigrations(gm);
+        expect(scene.writes).toHaveLength(writes);
     });
 });

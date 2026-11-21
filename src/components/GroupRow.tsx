@@ -26,7 +26,6 @@ import { GroupRowContextMenu } from "./GroupRowContextMenu";
 type RowSettings = {
     showMovementRange: boolean;
     showConditions: boolean;
-    showDistances: boolean;
     showAC: boolean;
     showHP: boolean;
     showDMR: boolean;

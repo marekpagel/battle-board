@@ -1,13 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import Collapse from "@mui/material/Collapse";
-import IconButton from "@mui/material/IconButton";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import { alpha } from "@mui/material/styles";
 import OBR, { isImage, type Item } from "@owlbear-rodeo/sdk";
 
@@ -15,8 +11,6 @@ import { InitiativeRollButton } from "./InitiativeControls";
 import { encounterStore } from "../encounter";
 import type { Combatant, CombatantPatch } from "../encounter";
 import { HealthBar, HealthDisplay } from "./HealthDisplay";
-import { DistancePanel } from "./DistancePanel";
-import { useDistances } from "../hooks/useDistances";
 import { playerCanEditHP, playerHealthMode, showsBar } from "../encounter/health";
 import { useHPEditing } from "../hooks/useHPEditing";
 import { CommitNumberField } from "./CommitFields";
@@ -30,7 +24,6 @@ type Props = {
     tokenUrl?: string;
     settings: InitiativeSettings;
     tokens: CMToken[];
-    colSpan?: number;
     showHealthColumn: boolean;
     showTempColumn: boolean;
     updateRow?: (id: string, patch: CombatantPatch) => void;
@@ -42,17 +35,13 @@ export default function PlayerRow({
     tokenUrl,
     settings,
     tokens,
-    colSpan,
     showHealthColumn,
     showTempColumn,
     updateRow,
 }: Props) {
-    const [open, setOpen] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | undefined>(tokenUrl);
-    const prevActiveRef = useRef(row.active);
 
     // Centralized hooks
-    const distances = useDistances(row.id, tokens, settings.showDistances && open, settings.roundDistances);
     const healthMode = playerHealthMode(row, settings);
     const canEditHP = playerCanEditHP(row, settings);
 
@@ -78,24 +67,6 @@ export default function PlayerRow({
         fontWeight: 600,
         lineHeight: 1.25
     };
-
-    // Auto-expand/collapse logic for player characters
-    useEffect(() => {
-        const wasActive = prevActiveRef.current;
-        const isActive = row.active;
-
-        // Auto-expand when becoming active (only for player characters)
-        if (!wasActive && isActive && row.playerCharacter) {
-            setOpen(true);
-        }
-
-        // Auto-collapse when becoming inactive
-        if (wasActive && !isActive) {
-            setOpen(false);
-        }
-
-        prevActiveRef.current = isActive;
-    }, [row.active, row.playerCharacter, row.name, row.id]);
 
     // Token image management
     useEffect(() => {
@@ -132,38 +103,12 @@ export default function PlayerRow({
 
     const isActive = row.active;
 
-    // Double-click to focus viewport on token; single-click still toggles expand
-    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const handleRowClick = useCallback(() => {
-        if (!settings.showDistances) return;
-
-        if (clickTimerRef.current !== null) {
-            clearTimeout(clickTimerRef.current);
-            clickTimerRef.current = null;
-            return;
-        }
-        clickTimerRef.current = setTimeout(() => {
-            clickTimerRef.current = null;
-            setOpen((prev) => !prev);
-        }, 250);
-    }, [settings.showDistances]);
-
-    const handleRowDoubleClick = useCallback(() => {
-        if (clickTimerRef.current !== null) {
-            clearTimeout(clickTimerRef.current);
-            clickTimerRef.current = null;
-        }
-        focusToken(row.id, tokens);
-    }, [row.id, tokens]);
-
     return (
         <>
             <TableRow
                 hover
                 selected={isActive}
-                onClick={handleRowClick}
-                onDoubleClick={handleRowDoubleClick}
+                onDoubleClick={() => void focusToken(row.id, tokens).catch(console.error)}
                 sx={{
                     height: "45px",
                     "& td": { py: isActive ? 0.6 : 0.4, px: 0.5 },
@@ -174,27 +119,6 @@ export default function PlayerRow({
                     cursor: "pointer",
                 }}
             >
-                {/* Expand / Collapse */}
-                <TableCell width={28}>
-                    {settings.showDistances && (
-                        <IconButton
-                            aria-label="expand row"
-                            size="small"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setOpen((prev) => !prev);
-                            }}
-                            sx={{ p: 0.25 }}
-                        >
-                            {open ? (
-                                <KeyboardArrowUp fontSize="inherit" sx={{ fontSize: "0.9rem" }} />
-                            ) : (
-                                <KeyboardArrowDown fontSize="inherit" sx={{ fontSize: "0.9rem" }} />
-                            )}
-                        </IconButton>
-                    )}
-                </TableCell>
-
                 {/* Initiative */}
                 <TableCell width={40} align="center" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                     {row.playerCharacter && !started && updateRow ? (
@@ -383,18 +307,6 @@ export default function PlayerRow({
                 )}
             </TableRow>
 
-            {/* Expanded distances panel */}
-            {settings.showDistances && (
-                <TableRow>
-                    <TableCell colSpan={colSpan} sx={{ p: 0, borderBottom: 0 }}>
-                        <Collapse in={open} timeout="auto" unmountOnExit>
-                            <Box sx={{ flex: 1, minWidth: 0, px: 4, py: 1 }}>
-                                <DistancePanel distances={distances} />
-                            </Box>
-                        </Collapse>
-                    </TableCell>
-                </TableRow>
-            )}
         </>
     );
 }

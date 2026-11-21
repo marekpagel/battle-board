@@ -13,14 +13,14 @@ import { getPluginId } from "../getPluginId";
 export const RING_META_KEY = getPluginId("rings");
 const RING_ID_PREFIX = `${RING_META_KEY}.`;
 
-/** "normal": the active PC's turn rings, seen by everyone. "dm": a GM-only preview. */
+/** "normal": an active combatant's turn rings. "dm": a GM-only preview. */
 export type RingVariant = "normal" | "dm";
 /** "move": circle left where the token started; "range": outline attached to the token. */
 export type RingKind = "move" | "range";
 
 export type RingStyle = { color: string; weight: number; pattern: "solid" | "dash"; opacity: number };
 
-export type RingWant = { tokenId: string; variant: RingVariant; kind: RingKind; radiusUnits: number; style: RingStyle };
+export type RingWant = { tokenId: string; variant: RingVariant; kind: RingKind; radiusUnits: number; style: RingStyle; visible: boolean };
 
 export const RING_DEFAULTS = {
     move: { color: "#519e00", weight: 12, pattern: "dash", opacity: 1 },
@@ -37,17 +37,20 @@ export function ringStyle(c: Combatant, kind: RingKind): RingStyle {
 type RingSettings = Pick<InitiativeSettings, "showRangeRings" | "showMovementRange" | "dmRingToggle">;
 
 /**
- * Which rings should exist. Turn rings: every active PC while the encounter
- * runs. DM preview: every combatant with the preview on, whatever the turn.
+ * Which rings should exist. Turn rings: every active combatant while the encounter
+ * runs; NPC rings are GM-only. DM previews are independent of the active turn.
  * Only movement rings are generated; saved attack rings are removed by the planner.
  */
 export function desiredRings(combatants: Combatant[], settings: RingSettings, started: boolean): RingWant[] {
     const wants: RingWant[] = [];
     const add = (c: Combatant, variant: RingVariant) => {
-        if (settings.showMovementRange && c.movement > 0) wants.push({ tokenId: c.id, variant, kind: "move", radiusUnits: c.movement, style: ringStyle(c, "move") });
+        if (settings.showMovementRange && c.movement > 0) wants.push({
+            tokenId: c.id, variant, kind: "move", radiusUnits: c.movement, style: ringStyle(c, "move"),
+            visible: variant === "normal" && c.playerCharacter && c.visible,
+        });
     };
     for (const c of combatants) {
-        if (started && settings.showRangeRings && c.active && c.playerCharacter) add(c, "normal");
+        if (started && settings.showRangeRings && c.active) add(c, "normal");
         if (settings.dmRingToggle && c.dmPreview) add(c, "dm");
     }
     return wants;
@@ -59,7 +62,7 @@ export type RingShape = {
     variant: RingVariant;
     kind: RingKind;
     center: Vector2;
-    /** Turn rings are visible to everyone; DM previews are hidden items only GMs see. */
+    /** Visible PC turn rings are shared; NPC turn rings and DM previews are GM-only. */
     visible: boolean;
     style: RingStyle;
     /** Move: circle diameter in px. Range: half token size plus reach, in px. */
@@ -82,7 +85,7 @@ export function ringShape(want: RingWant, token: Item, grid: GridScale): RingSha
     const geometry = want.kind === "move"
         ? { diameter: unitsToPixels(want.radiusUnits * 2, grid) + Math.max(cells.w, cells.h) * grid.dpi }
         : { halfW: (cells.w * grid.dpi) / 2, halfH: (cells.h * grid.dpi) / 2, reach: unitsToPixels(want.radiusUnits, grid) };
-    const visible = want.variant === "normal";
+    const visible = want.visible;
     return {
         id: ringIdFor(want.tokenId, want.variant, want.kind),
         tokenId: want.tokenId,

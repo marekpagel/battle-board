@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -27,23 +26,8 @@ export default function PlayerTable({
     tokens,
     updateRow
 }: PlayerTableProps) {
-    // Columns: base (4) + health + temp HP (when any row is editable). Rows render matching cells.
     const showHealthColumn = showPlayerHealthColumn(settings);
     const showTempColumn = showHealthColumn && items.some((item) => playerCanEditHP(item, settings));
-    const colCount = 4 + (showHealthColumn ? 1 : 0) + (showTempColumn ? 1 : 0);
-
-    // Memoize the initiative token IDs to avoid unnecessary recalculations
-    const initiativeTokenIds = useMemo(() =>
-        new Set(items.map(item => item.id)),
-        [items]
-    );
-
-    // Filter tokens to only include those in initiative
-    const filteredTokens = useMemo(() =>
-        tokens.filter(token => initiativeTokenIds.has(token.id)),
-        [tokens, initiativeTokenIds]
-    );
-
     return (
         <TableContainer
             component={Paper}
@@ -69,7 +53,6 @@ export default function PlayerTable({
             >
                 <TableHead>
                     <TableRow>
-                        <TableCell width={18}></TableCell>
                         <TableCell width={40} align="center">INIT</TableCell>
                         <TableCell width={60} align="center"></TableCell>
                         <TableCell align="center">NAME</TableCell>
@@ -79,25 +62,18 @@ export default function PlayerTable({
                 </TableHead>
 
                 <TableBody>
-                    {items.map((item) => {
-                        // Get the current token data for this item
-                        const tokenData = tokens.find(token => token.id === item.id);
-
-                        return (
-                            <PlayerRow
-                                key={item.id}
-                                row={item}
-                                started={started}
-                                tokenUrl={tokenData?.id ? undefined : undefined} // Let PlayerRow handle token URL fetching
-                                settings={settings}
-                                tokens={filteredTokens}
-                                colSpan={colCount}
-                                showHealthColumn={showHealthColumn}
-                                showTempColumn={showTempColumn}
-                                updateRow={updateRow}
-                            />
-                        );
-                    })}
+                    {items.map((item) => (
+                        <PlayerRow
+                            key={item.id}
+                            row={item}
+                            started={started}
+                            settings={settings}
+                            tokens={tokens}
+                            showHealthColumn={showHealthColumn}
+                            showTempColumn={showTempColumn}
+                            updateRow={updateRow}
+                        />
+                    ))}
                 </TableBody>
             </Table>
         </TableContainer>

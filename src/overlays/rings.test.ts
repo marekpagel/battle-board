@@ -30,9 +30,9 @@ const settings: InitiativeSettings = DEFAULT_SETTINGS;
 const kinds = (wants: ReturnType<typeof desiredRings>) => wants.map((w) => `${w.tokenId}:${w.variant}:${w.kind}`);
 
 describe("desiredRings", () => {
-    it("gives every active PC turn rings while the encounter runs, and no one else", () => {
+    it("gives every active combatant a turn ring while the encounter runs", () => {
         const combatants = [c("pc1", { playerCharacter: true, active: true }), c("pc2", { playerCharacter: true, active: true }), c("npc", { active: true }), c("idle", { playerCharacter: true })];
-        expect(kinds(desiredRings(combatants, settings, true))).toEqual(["pc1:normal:move", "pc2:normal:move"]);
+        expect(kinds(desiredRings(combatants, settings, true))).toEqual(["pc1:normal:move", "pc2:normal:move", "npc:normal:move"]);
         expect(desiredRings(combatants, settings, false)).toEqual([]);
         expect(desiredRings(combatants, { ...settings, showRangeRings: false }, true)).toEqual([]);
     });
@@ -53,6 +53,17 @@ describe("desiredRings", () => {
         const token = makeToken({ id: "a" });
         const [want] = desiredRings([c("a", { dmPreview: true })], settings, false);
         expect(ringShape(want, token, grid).visible).toBe(false);
+    });
+
+    it("keeps NPC turn rings GM-only without requiring the preview toggle", () => {
+        const combatants = [
+            c("npc", { active: true }), c("pc", { active: true, playerCharacter: true }),
+            c("hidden-pc", { active: true, playerCharacter: true, visible: false }),
+        ];
+        const wants = desiredRings(combatants, { ...settings, dmRingToggle: false }, true);
+        expect(wants.map((want) => [want.tokenId, ringShape(want, makeToken({ id: want.tokenId }), grid).visible])).toEqual([
+            ["npc", false], ["pc", true], ["hidden-pc", false],
+        ]);
     });
 
     it("sizes rings from the token's footprint, at least one cell", () => {
@@ -78,6 +89,53 @@ describe("ring sync", () => {
         const writes = scene.writes.length;
         await syncRings(port, grid, fakeRing);
         expect(scene.writes.length).toBe(writes);
+    });
+
+    it("draws GM-only movement rings for active NPC group members and removes them when their turn ends", async () => {
+        const scene = createFakeScene({
+            items: [
+                makeToken({ id: "goblin-a", metadata: meta({ active: true, groupId: "g", groupIndex: 0 }) }),
+                makeToken({ id: "goblin-b", metadata: meta({ active: true, groupId: "g", groupIndex: 1 }) }),
+                makeToken({ id: "pc", metadata: meta({ playerCharacter: true }) }),
+            ],
+            sceneMetadata: running, roomMetadata: { [ROOM_META_KEY]: { dmRingToggle: false } },
+        });
+        const port = scene.connect("GM");
+        await syncRings(port, grid, fakeRing);
+        const rings = scene.peek().items.filter((item) => item.metadata[RING_META_KEY]);
+        expect(rings.map((ring) => [ring.id, ring.visible])).toEqual([
+            [ringIdFor("goblin-a", "normal", "move"), false], [ringIdFor("goblin-b", "normal", "move"), false],
+        ]);
+        await port.items.update(["goblin-a"], ([item]) => { item.position = { x: 500, y: 500 }; });
+        await syncRings(port, grid, fakeRing);
+        expect(scene.peek().items.find((item) => item.id === rings[0].id)!.position).toEqual({ x: 0, y: 0 });
+
+        await port.items.update(["goblin-a", "goblin-b", "pc"], (items) => {
+            for (const item of items) (item.metadata[META_KEY] as { active: boolean }).active = item.id === "pc";
+        });
+        await syncRings(port, grid, fakeRing);
+        expect(ringIds(scene.peek().items)).toEqual([ringIdFor("pc", "normal", "move")]);
+        expect(scene.peek().items.find((item) => item.id === ringIdFor("pc", "normal", "move"))!.visible).toBe(true);
+        await port.sceneMetadata.set({ [SCENE_META_KEY]: { started: false, round: 0 } });
+        await syncRings(port, grid, fakeRing);
+        expect(ringIds(scene.peek().items)).toEqual([]);
+    });
+
+    it("hides an existing PC turn ring when reclassified as an NPC, keeping its origin", async () => {
+        const scene = createFakeScene({
+            items: [makeToken({ id: "token", metadata: meta({ playerCharacter: true, active: true }) })],
+            sceneMetadata: running,
+        });
+        const port = scene.connect();
+        await syncRings(port, grid, fakeRing);
+        const id = ringIdFor("token", "normal", "move");
+        expect(scene.peek().items.find((item) => item.id === id)!.visible).toBe(true);
+        await port.items.update(["token"], ([item]) => {
+            (item.metadata[META_KEY] as { playerCharacter: boolean }).playerCharacter = false;
+            item.position = { x: 300, y: 200 };
+        });
+        await syncRings(port, grid, fakeRing);
+        expect(scene.peek().items.find((item) => item.id === id)).toMatchObject({ visible: false, position: { x: 0, y: 0 } });
     });
 
     it("leaves the movement circle where the turn started when the token moves", async () => {
@@ -138,7 +196,7 @@ describe("ring sync", () => {
     it("removes existing attack rings for both turn and DM preview while preserving movement rings", async () => {
         const token = makeToken({ id: "pc", metadata: meta({ playerCharacter: true, active: true, dmPreview: true }) });
         const attack = (variant: "normal" | "dm") => fakeRing(ringShape({
-            tokenId: "pc", variant, kind: "range", radiusUnits: 60,
+            tokenId: "pc", variant, kind: "range", radiusUnits: 60, visible: variant === "normal",
             style: { color: "#fe4c50", weight: 12, pattern: "dash", opacity: 1 },
         }, token, grid));
         const scene = createFakeScene({
@@ -150,7 +208,7 @@ describe("ring sync", () => {
     });
 
     it("removes rings left by older versions", async () => {
-        const shape = ringShape({ tokenId: "x", variant: "normal", kind: "move", radiusUnits: 30, style: { color: "#fff", weight: 12, pattern: "dash", opacity: 1 } }, makeToken({ id: "x" }), grid);
+        const shape = ringShape({ tokenId: "x", variant: "normal", kind: "move", radiusUnits: 30, visible: true, style: { color: "#fff", weight: 12, pattern: "dash", opacity: 1 } }, makeToken({ id: "x" }), grid);
         const legacy = fakeRing({ ...shape, id: "random-old-id" });
         const scene = createFakeScene({ items: [legacy] });
         await syncRings(scene.connect(), grid, fakeRing);

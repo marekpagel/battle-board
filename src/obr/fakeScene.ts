@@ -1,4 +1,4 @@
-import type { GridMeasurement, Item, Metadata } from "@owlbear-rodeo/sdk";
+import type { Item, Metadata } from "@owlbear-rodeo/sdk";
 import type { BroadcastDestination, ObrPort, PartyMember, Role, Unsubscribe } from "./port";
 
 /**
@@ -8,10 +8,10 @@ import type { BroadcastDestination, ObrPort, PartyMember, Role, Unsubscribe } fr
  * the write's promise resolves. Tests should still `await flush()` before
  * asserting on what other subscribers saw.
  */
-export type FakeGrid = { dpi: number; multiplier: number; unit: string; measurement: GridMeasurement };
+export type FakeGrid = { dpi: number; multiplier: number; unit: string };
 
 export function createFakeScene(initial: { items?: Item[]; sceneMetadata?: Metadata; roomMetadata?: Metadata; grid?: Partial<FakeGrid> } = {}) {
-    let grid: FakeGrid = { dpi: 150, multiplier: 5, unit: "ft", measurement: "CHEBYSHEV", ...initial.grid };
+    let grid: FakeGrid = { dpi: 150, multiplier: 5, unit: "ft", ...initial.grid };
     const gridListeners = new Set<() => void>();
     let items: Item[] = clone(initial.items ?? []);
     let sceneMetadata: Metadata = clone(initial.sceneMetadata ?? {});
@@ -154,16 +154,6 @@ export function createFakeScene(initial: { items?: Item[]; sceneMetadata?: Metad
             grid: {
                 getDpi: async () => grid.dpi,
                 getScale: async () => ({ multiplier: grid.multiplier, unit: grid.unit }),
-                getMeasurement: async () => grid.measurement,
-                async getDistance(from, to) {
-                    // Square grid only.
-                    const dx = Math.abs(to.x - from.x) / grid.dpi;
-                    const dy = Math.abs(to.y - from.y) / grid.dpi;
-                    if (grid.measurement === "CHEBYSHEV") return Math.max(dx, dy);
-                    if (grid.measurement === "MANHATTAN") return dx + dy;
-                    if (grid.measurement === "ALTERNATING") return Math.max(dx, dy) + Math.floor(Math.min(dx, dy) / 2);
-                    return Math.hypot(dx, dy);
-                },
                 onChange: (cb) => subscribe(gridListeners, cb),
             },
         };

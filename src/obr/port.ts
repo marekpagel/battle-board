@@ -1,4 +1,4 @@
-import type { GridMeasurement, Item, Metadata, Vector2 } from "@owlbear-rodeo/sdk";
+import type { Item, Metadata } from "@owlbear-rodeo/sdk";
 
 /**
  * The slice of the Owlbear Rodeo SDK that domain modules depend on.
@@ -67,9 +67,6 @@ export interface GridPort {
     getDpi(): Promise<number>;
     /** Scene units per cell and their label, e.g. 5 "ft". */
     getScale(): Promise<{ multiplier: number; unit: string }>;
-    getMeasurement(): Promise<GridMeasurement>;
-    /** Distance between two scene points in cells, by the grid's measurement rules. */
-    getDistance(from: Vector2, to: Vector2): Promise<number>;
     onChange(callback: () => void): Unsubscribe;
 }
 

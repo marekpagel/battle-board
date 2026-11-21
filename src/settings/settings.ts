@@ -15,8 +15,6 @@ export type InitiativeSettings = {
     /** Legacy setting retained for saved-room compatibility; attack rings are no longer drawn. */
     showAttackRange: boolean;
     showConditions: boolean;
-    showDistances: boolean;
-    roundDistances: boolean;
     /** DM-only range ring toggle button in each row */
     dmRingToggle: boolean;
     /** Show concentration column in the GM list */
@@ -31,10 +29,8 @@ export type InitiativeSettings = {
     /** Players may edit their PCs' health */
     playerEditableHealth: boolean;
     // Gameplay
-    /** Turn rings for the active PC */
+    /** Turn rings: PCs visible to everyone, NPCs visible only to GMs */
     showRangeRings: boolean;
-    /** Dotted lines from the active PC to every combatant more than two cells away */
-    showDistanceLines: boolean;
     /** Staging a group hides its tokens; releasing shows them */
     groupStagingControlsVisibility: boolean;
     /** Players get a turn bar for the combatants they own */
@@ -47,8 +43,6 @@ export const DEFAULT_SETTINGS: InitiativeSettings = {
     showMovementRange: true,
     showAttackRange: true,
     showConditions: true,
-    showDistances: true,
-    roundDistances: false,
     dmRingToggle: true,
     showConcentration: false,
     disablePlayerList: false,
@@ -57,7 +51,6 @@ export const DEFAULT_SETTINGS: InitiativeSettings = {
     npcHealthMode: "status",
     playerEditableHealth: false,
     showRangeRings: true,
-    showDistanceLines: false,
     groupStagingControlsVisibility: true,
     turnBar: false,
 };
