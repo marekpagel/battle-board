@@ -42,6 +42,9 @@ The modifier added to a d20 initiative roll. Each token keeps its individual bon
 **Character profile**:
 Reusable permanent stats saved in the room under a token's name: max HP, speed, AC, individual initiative bonus and PC/NPC flag. Name matching ignores case and surrounding spaces. Fresh tokens load a matching profile when first added to initiative and start at full HP; returning tokens keep their saved stats. The DM can explicitly Save, Update, Load or Forget a profile from expanded combatant options. Settings lists saved profiles and supports deleting them, copying JSON, and importing JSON by merging names or replacing the collection. Profiles do not contain encounter state or update existing combatants automatically.
 
+**Initiative request**:
+Before starting an encounter, the DM can prompt connected players for their owned, visible PCs at initiative 0. A player enters an initiative total or rolls with the saved bonus in a popup, even with the main panel closed. Shared turns have one input and require ownership of every member; staged groups are excluded. Requests are temporary messages to connected clients. Submissions recheck ownership, pending initiative and the encounter lock. Answered characters leave the prompt; starting the encounter closes it. The main bulk roll still skips PCs.
+
 ### Groups
 
 **Group**:

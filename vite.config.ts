@@ -36,6 +36,7 @@ export default defineConfig({
         background: 'background.html',
         elevation: 'elevation.html',
         health: 'health.html',
+        initiative: 'initiative.html',
         groupmodal: 'groupmodal.html',
         turnbar: 'turnbar.html',
       }

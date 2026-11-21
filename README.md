@@ -76,6 +76,14 @@ to roll it.
 The main **Roll initiative** button continues to skip PCs and groups containing
 PCs.
 
+Before **Start**, click **Request player initiative** to open an initiative
+prompt for connected players whose owned, visible PCs are still at 0. Players
+can type their total or use **Roll** with the saved initiative bonus, without
+opening the tracker. Each owned group gets one input; groups with different
+owners and staged groups stay under DM control. The prompt closes after the
+player answers or the encounter starts. Use **Reset initiative to 0** before
+requesting fresh rolls for another encounter.
+
 #### Turn Management
 - **Start/End Combat** - Activates the initiative system and begins tracking
 - **Next/Previous Turn** - Cycles through initiative order

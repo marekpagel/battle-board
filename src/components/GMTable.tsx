@@ -30,6 +30,8 @@ import type { CMToken } from "./tokens";
 import { useId, useMemo } from "react";
 import { canPrev, stagedGroups, turnOrder, type Turn } from "../encounter/turnOrder";
 import StopRounded from "@mui/icons-material/StopRounded";
+import { RequestInitiativeButton } from "../initiative/RequestInitiativeButton";
+import { initiativePromptTargets } from "../encounter/initiativePrompt";
 
 type Props = {
     items: Combatant[];
@@ -324,7 +326,8 @@ export default function GmTable({
                 flexShrink: 0,
             }}>
                 {!started && (
-                    <Stack direction="row" spacing={2} sx={{ mb: 0.5 }}>
+                    <Stack direction="row" useFlexGap flexWrap="wrap" spacing={2} sx={{ mb: 0.5 }}>
+                        <RequestInitiativeButton disabled={initiativePromptTargets({ combatants: items, groups, started, round }).length === 0} />
                         <Button size="small" variant="text" disabled={!activeRenderItems.some((turn) => turn.type === "individual" ? !turn.item.playerCharacter : turn.items.every((c) => !c.playerCharacter))} onClick={() => encounterStore.rollInitiative().catch(console.error)} sx={{ minWidth: 0, p: 0, border: 0, borderRadius: 0, fontSize: "0.75rem" }}>Roll initiative</Button>
                         <Button size="small" variant="text" disabled={items.length === 0} onClick={() => encounterStore.resetInitiative().catch(console.error)} sx={{ minWidth: 0, p: 0, border: 0, borderRadius: 0, fontSize: "0.75rem" }}>Reset initiative to 0</Button>
                     </Stack>

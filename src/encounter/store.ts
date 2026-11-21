@@ -10,6 +10,7 @@ import * as turns from "./turnOrder";
 import { createProfileStore } from "../profiles/store";
 import { findProfile, type CharacterProfiles } from "../profiles/profiles";
 import { resourcesOf, turnOf, type TurnResources } from "./turnResources";
+import { initiativePromptTargets } from "./initiativePrompt";
 
 export const SCENE_META_KEY = getPluginId("sceneState");
 export const ITEM_ADDED_CHANNEL = "com.missing-link-dev.battle-board/item-added";
@@ -457,6 +458,25 @@ export function createEncounterStore(port: ObrPort) {
                 for (const item of items) {
                     const meta = savedMeta(item);
                     if (meta) Object.assign(meta, results.get(item.id));
+                }
+            });
+        }),
+
+        /** Popup submissions recheck ownership, shared turns and zero initiative on fresh scene state. */
+        submitRequestedInitiative: (id: string, initiative: number) => exclusive(async () => {
+            if (!Number.isFinite(initiative)) throw new Error("Enter a valid initiative total.");
+            const [state, playerId, role] = await Promise.all([turnSnapshot(), port.player.getId(), port.player.getRole()]);
+            if (role !== "PLAYER" || !initiativePromptTargets(state, playerId).some((c) => c.id === id)) {
+                throw new Error("This character is no longer waiting for initiative.");
+            }
+            const pc = state.combatants.find((c) => c.id === id)!;
+            const group = state.groups.find((g) => g.id === pc.groupId);
+            await port.items.update(group?.memberIds ?? [id], (items) => {
+                for (const item of items) {
+                    const meta = savedMeta(item);
+                    if (!meta) continue;
+                    meta.initiative = group ? Math.floor(initiative) : Math.round(initiative * 10) / 10;
+                    if (group) meta.groupIndex = group.memberIds.indexOf(item.id);
                 }
             });
         }),

@@ -12,6 +12,8 @@ import { useTurnBarPopover } from "./turnbar/useTurnBarPopover";
 import { usePlayerIdentity } from "./turnbar/usePlayerIdentity";
 import { registerInitiativeContextMenu } from "./components/initiativeMenu";
 import { runSavedDataMigrations } from "./settings/migrations";
+import { listenForInitiativeRequests } from "./initiative/requests";
+import { initiativePromptUI } from "./initiative/popup";
 
 /** Scene services live in the background so the main extension panel can be closed. */
 export function SceneRuntime() {
@@ -25,6 +27,7 @@ export function SceneRuntime() {
     useTurnEndSync(true);
     useTurnBarPopover(role, playerId, settings);
     useEffect(() => registerInitiativeContextMenu(), []);
+    useEffect(() => listenForInitiativeRequests(obrAdapter, initiativePromptUI), []);
     useEffect(() => {
         void runSavedDataMigrations(obrAdapter).catch(console.error);
         return () => encounterStore.dispose();
