@@ -82,6 +82,9 @@ What players may see of a combatant's health: none, status only, or numbers. Set
 **Concentration check**:
 A prompt raised when a concentrating combatant takes damage, with DC equal to the greater of 10 and half the damage. Shown to the GM always, and to players only for PCs.
 
+**Token health controls**:
+A DM-only Damage / Heal action in the map token menu and a heart button in the main tool palette for combatants. The toolbar heart opens a valid current selection directly, or activates a targeting mode so the DM can click a token on the map without relying on selection state. Its popup shows the selected tokens' portraits and live HP. Compact −5/−1/+1/+5 buttons apply damage or healing, and the popup resizes to fit its contents. Multiple selected tokens each receive the full amount, without changing unselected group members. The popup keeps its original targets even if map selection changes. Damage consumes temp HP first, healing caps at max HP, and concentration checks use the same rules as the tracker.
+
 **Owner**:
 The player who owns a token: Owlbear's `createdUserId`, which the GM can reassign in Owlbear. A combatant owned by the GM has no owner in this sense.
 

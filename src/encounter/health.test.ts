@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { healthColor, concentrationAudience, healthFraction, playerCanEditHP, playerHealthMode, setCurrent, setMax, setTemp, showPlayerHealthColumn, status } from "./health";
+import { adjustCurrent, healthColor, concentrationAudience, healthFraction, playerCanEditHP, playerHealthMode, setCurrent, setMax, setTemp, showPlayerHealthColumn, status } from "./health";
 
 const hp = (currentHP: number, maxHP: number, tempHP = 0, concentrating = false) => ({ currentHP, maxHP, tempHP, concentrating });
 
 describe("damage and healing", () => {
+    it("applies damage larger than current HP through temporary HP before clamping the result", () => {
+        expect(adjustCurrent(hp(10, 30, 5), -12).patch).toEqual({ tempHP: 0, currentHP: 3 });
+        expect(adjustCurrent(hp(10, 30, 5), -100).patch).toEqual({ tempHP: 0, currentHP: 0 });
+        expect(adjustCurrent(hp(0, 30, 5), -3).patch).toEqual({ tempHP: 2, currentHP: 0 });
+    });
+
+    it("caps healing at max HP without changing temporary HP or prompting concentration", () => {
+        expect(adjustCurrent(hp(10, 30, 5, true), 100)).toEqual({ patch: { currentHP: 30 }, concentrationCheck: null });
+    });
     it("temp HP absorbs damage typed into current HP first", () => {
         expect(setCurrent(hp(20, 30, 5), 12).patch).toEqual({ tempHP: 0, currentHP: 17 });
     });

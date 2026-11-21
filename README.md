@@ -132,6 +132,25 @@ HP fields support mathematical expressions for quick combat adjustments:
 - **Complex:** Type `25-3+2-1` for multi-step calculations
 - **Absolute:** Type `15` to set HP to exactly 15
 
+#### Damage and Healing from the Map
+
+Select a token already in initiative, then choose **Damage / Heal** (the heart
+icon) in Owlbear's token menu, or click the heart in the main tool palette.
+With the toolbar heart, click the heart and then click a token on the map.
+If a valid selection is still available when the heart is clicked, its health
+controls open immediately; otherwise the heart activates a crosshair for
+choosing the target. This also works when toolbar clicks clear the selection.
+Owlbear places extension token-menu items in its overflow menu; the
+bottom selection bar cannot be customized through the extension SDK.
+
+The compact DM popup shows the selected tokens' portraits, names, and live HP,
+with **−5 / −1 / +1 / +5** buttons for damage and healing. It resizes to its
+content, including multi-token selections and any error message.
+
+Select several tokens to apply an adjustment to each. Unselected members of
+their groups are unaffected. Temporary HP absorbs damage first, healing stops
+at max HP, and concentration checks work just as they do in the tracker.
+
 #### Health Status Display
 Battle Board automatically calculates and displays health status:
 

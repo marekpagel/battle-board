@@ -20,6 +20,16 @@ export function setCurrent(c: HP, value: number): HealthChange {
     return change(c, { tempHP: c.tempHP - absorbed, currentHP: Math.max(0, c.currentHP - (damage - absorbed)) });
 }
 
+/** Apply the full damage amount before clamping HP, even when it exceeds current HP. */
+export function adjustCurrent(c: HP, delta: number): HealthChange {
+    if (delta >= 0) return setCurrent(c, c.currentHP + delta);
+    const absorbed = Math.min(-delta, c.tempHP);
+    return change(c, {
+        tempHP: c.tempHP - absorbed,
+        currentHP: Math.max(0, c.currentHP + delta + absorbed),
+    });
+}
+
 /**
  * Set temp HP to `value`. Lowering it below the current temp HP is damage:
  * whatever the temp HP cannot absorb spills into current HP.

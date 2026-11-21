@@ -1,10 +1,12 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { META_KEY } from "./metadata";
 import { encounterStore } from "../encounter";
+import { registerTokenHealthActions } from "./tokenHealthAction";
 
 const MODAL_ID = META_KEY + "/group-modal";
 
 export function registerInitiativeContextMenu() {
+    const stopHealthActions = registerTokenHealthActions();
     const addSoloId = META_KEY + "/menu";
     const addGroupId = META_KEY + "/add-group-menu";
     const removeId = META_KEY + "/remove-menu";
@@ -132,5 +134,5 @@ export function registerInitiativeContextMenu() {
         },
     });
 
-    return () => { };
+    return stopHealthActions;
 }

@@ -34,6 +34,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         elevation: 'elevation.html',
+        health: 'health.html',
         groupmodal: 'groupmodal.html',
         turnbar: 'turnbar.html',
       }

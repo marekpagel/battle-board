@@ -343,6 +343,39 @@ describe("encounter store", () => {
 });
 
 describe("initiative rolls and HP taps", () => {
+    it("damages only selected tokens, once each, using their own current and temporary HP", async () => {
+        const { store, port, scene, meta } = await setup([
+            makeToken({ id: "a", metadata: saved({ groupId: "zombies", currentHP: 10, maxHP: 20, tempHP: 5, concentrating: true }) }),
+            makeToken({ id: "b", metadata: saved({ groupId: "zombies", currentHP: 20, maxHP: 20, tempHP: 0, concentrating: true }) }),
+            makeToken({ id: "unselected", metadata: saved({ groupId: "zombies", currentHP: 20, maxHP: 20 }) }),
+            makeToken({ id: "removed", metadata: saved({ inInitiative: false, currentHP: 20, maxHP: 20 }) }),
+        ]);
+        const checks: unknown[] = [];
+        port.broadcast.onMessage(CONCENTRATION_CHANNEL, (message) => checks.push(message));
+        await store.adjustHP(["a", "b", "a", "removed", "missing"], -12);
+        await flush();
+        expect(meta("a")).toMatchObject({ currentHP: 3, tempHP: 0 });
+        expect(meta("b")).toMatchObject({ currentHP: 8, tempHP: 0 });
+        expect(meta("unselected").currentHP).toBe(20);
+        expect(meta("removed").currentHP).toBe(20);
+        expect(checks).toHaveLength(2);
+        expect(scene.writes.filter((write) => write.kind === "items.update")).toEqual([{ kind: "items.update", ids: ["a", "b"] }]);
+        await store.adjustHP(["a", "b"], 100);
+        expect(meta("a").currentHP).toBe(20);
+        expect(meta("b").currentHP).toBe(20);
+    });
+
+    it("serializes selected-token adjustments against fresh health and rejects invalid amounts", async () => {
+        const { store, meta } = await setup([
+            makeToken({ id: "a", metadata: saved({ currentHP: 20, maxHP: 20, tempHP: 5 }) }),
+            makeToken({ id: "b", metadata: saved({ currentHP: 20, maxHP: 20 }) }),
+        ]);
+        await expect(store.adjustHP(["a", "b"], Number.NaN)).rejects.toThrow("finite");
+        await expect(store.adjustHP(["a", "b"], Number.POSITIVE_INFINITY)).rejects.toThrow("finite");
+        await Promise.all([store.adjustHP(["a", "b"], -5), store.adjustHP(["a", "b"], -5)]);
+        expect(meta("a")).toMatchObject({ currentHP: 15, tempHP: 0 });
+        expect(meta("b")).toMatchObject({ currentHP: 10, tempHP: 0 });
+    });
     it("serializes typed HP and button adjustments and announces each committed loss once", async () => {
         const { store, port, meta } = await setup([
             makeToken({ id: "a", metadata: saved({ currentHP: 30, maxHP: 30, tempHP: 5, concentrating: true }) }),

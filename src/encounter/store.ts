@@ -4,7 +4,7 @@ import { getPluginId } from "../getPluginId";
 import type { ObrPort, Unsubscribe } from "../obr/port";
 import { memberIndex, toCombatant, type Combatant, type CombatantPatch } from "./combatant";
 import { deriveGroups, newGroupId, type Group } from "./groups";
-import { setCurrent, setMax, setTemp, type HealthChange } from "./health";
+import { adjustCurrent, setCurrent, setMax, setTemp, type HealthChange } from "./health";
 import { announceConcentrationCheck } from "./concentration";
 import * as turns from "./turnOrder";
 import { createProfileStore } from "../profiles/store";
@@ -96,19 +96,23 @@ export function createEncounterStore(port: ObrPort) {
     }
 
     /** Apply health rules to fresh state and announce checks only after the write succeeds. */
-    function changeHP(id: string, calculate: (combatant: Combatant) => HealthChange) {
+    function changeHP(ids: string | string[], calculate: (combatant: Combatant) => HealthChange) {
         return exclusive(async () => {
+            const selected = new Set(typeof ids === "string" ? [ids] : ids);
+            if (!selected.size) return;
             const { combatants } = await snapshot();
-            const combatant = combatants.find((c) => c.id === id);
-            if (!combatant) return;
-            const { patch, concentrationCheck } = calculate(combatant);
-            await port.items.update([id], (items) => {
+            const changes = new Map(combatants.filter((c) => selected.has(c.id))
+                .map((combatant) => [combatant.id, { combatant, ...calculate(combatant) }]));
+            if (!changes.size) return;
+            await port.items.update([...changes.keys()], (items) => {
                 for (const item of items) {
                     const meta = savedMeta(item);
-                    if (meta) Object.assign(meta, patch);
+                    if (meta) Object.assign(meta, changes.get(item.id)!.patch);
                 }
             });
-            if (concentrationCheck) await announceConcentrationCheck(port, combatant, concentrationCheck.dc);
+            for (const { combatant, concentrationCheck } of changes.values()) {
+                if (concentrationCheck) await announceConcentrationCheck(port, combatant, concentrationCheck.dc);
+            }
         });
     }
 
@@ -363,10 +367,13 @@ export function createEncounterStore(port: ObrPort) {
                 return field === "temp" ? setTemp(combatant, value) : setCurrent(combatant, value);
             }),
 
-        adjustHP: (id: string, delta: number, field: "current" | "temp" = "current") =>
-            changeHP(id, (combatant) => field === "temp"
+        /** Apply an HP adjustment independently to the selected tokens, never to their whole groups. */
+        adjustHP: (ids: string | string[], delta: number, field: "current" | "temp" = "current") => {
+            if (!Number.isFinite(delta)) return Promise.reject(new Error("HP adjustment must be a finite number."));
+            return changeHP(ids, (combatant) => field === "temp"
                 ? setTemp(combatant, combatant.tempHP + delta)
-                : setCurrent(combatant, combatant.currentHP + delta)),
+                : adjustCurrent(combatant, delta));
+        },
 
         async setGroupInitiativeBonus(groupId: string, bonus: number) {
             if (!Number.isFinite(bonus)) return;
