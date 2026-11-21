@@ -91,7 +91,7 @@ The player who owns a token: Owlbear's `createdUserId`, which the GM can reassig
 ### Turn bar
 
 **Turn bar**:
-A player's floating tracker, shown during an encounter when the room setting is on and they own a visible combatant in the turn order. One slide per owned combatant, never per group.
+A floating tracker shown during an encounter. Players see one slide per owned visible combatant when the player turn-bar room setting is enabled. The DM's bar follows the active turn, including hidden combatants, with group-member browsing, NPC action/bonus/reaction controls, Previous/Next, round, End encounter and Open tracker. The DM bar is independent of the player setting. Each viewer can show/hide and position their bar from the main panel. A background page keeps the turn bar, scene overlays, token health controls and player turn completion working with the main panel closed.
 _Avoid_: Action bar
 
 **Turn resources**:
@@ -109,10 +109,10 @@ The height of a token's bottom face above the map, in scene units; may be negati
 A circle around an active combatant showing how far it can move this turn, left at its start-of-turn position. PC rings are visible to everyone; NPC rings are visible only to the GM. The movement-ring settings apply to both, and every active member of a group gets its own ring.
 
 **Map health bar**:
-A compact overlay below each token with saved health data, including tokens outside initiative. The GM sees an HP bar, current/max HP, and temp HP. Players see their configured PC/NPC health mode, with no overlays when the master health switch is off. Bars are local to each viewer, update while the tracker is open, and disappear when it closes.
+A compact overlay below each token with saved health data, including tokens outside initiative. The GM sees an HP bar, current/max HP, and temp HP. Players see their configured PC/NPC health mode, with no overlays when the master health switch is off. Bars are local to each viewer, update from the background page while the scene is open, and disappear when that scene runtime closes.
 
 **Initiative order badge**:
-A small numbered badge at a combatant's upper-right while the encounter runs. Numbers indicate turn positions starting at 1, with group members sharing a number. The active turn has a highlighted badge. Players see badges for all visible combatants regardless of ownership or whether the player initiative list is enabled. Hidden turns do not leave gaps in player numbering. Staged groups have no badge. Badges scale with map zoom and disappear when the encounter ends or the tracker closes.
+A small numbered badge at a combatant's upper-right while the encounter runs. Numbers indicate turn positions starting at 1, with group members sharing a number. The active turn has a highlighted badge. Players see badges for all visible combatants regardless of ownership or whether the player initiative list is enabled. Hidden turns do not leave gaps in player numbering. Staged groups have no badge. Badges scale with map zoom and disappear when the encounter ends or the scene runtime closes.
 
 **DM preview**:
 A ring visible only to the GM, toggled per combatant, independent of whose turn it is.

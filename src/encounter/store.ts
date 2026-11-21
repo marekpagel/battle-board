@@ -42,6 +42,7 @@ export function createEncounterStore(port: ObrPort) {
     let state: EncounterState = { ready: false, combatants: [], groups: [], started: false, round: 0 };
     const listeners = new Set<() => void>();
     let stopSync: Unsubscribe | null = null;
+    let syncVersion = 0;
 
     function setState(next: Partial<EncounterState>) {
         state = { ...state, ...next };
@@ -59,10 +60,12 @@ export function createEncounterStore(port: ObrPort) {
     }
 
     function startSync() {
-        const unsubItems = port.items.onChange(applyItems);
-        const unsubScene = port.sceneMetadata.onChange(applyScene);
+        const version = ++syncVersion;
+        const unsubItems = port.items.onChange((items) => { if (version === syncVersion) applyItems(items); });
+        const unsubScene = port.sceneMetadata.onChange((scene) => { if (version === syncVersion) applyScene(scene); });
         Promise.all([port.items.get(), port.sceneMetadata.get()])
             .then(([items, scene]) => {
+                if (version !== syncVersion) return;
                 applyItems(items);
                 applyScene(scene);
                 setState({ ready: true });
@@ -177,8 +180,10 @@ export function createEncounterStore(port: ObrPort) {
 
         /** Stop listening to the scene. */
         dispose() {
+            syncVersion++;
             stopSync?.();
             stopSync = null;
+            state = { ready: false, combatants: [], groups: [], started: false, round: 0 };
             listeners.clear();
         },
 

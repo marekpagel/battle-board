@@ -29,6 +29,20 @@ const activeIds = (scene: ReturnType<typeof room>) =>
     scene.peek().items.filter((i) => (i.metadata[META_KEY] as { active: boolean }).active).map((i) => i.id);
 
 describe("turn end sync", () => {
+    it("advances from the background after the GM panel's own store is disposed", async () => {
+        const scene = room([combatant("pc", "alice", { initiative: 20, active: true }), combatant("npc", "gm", { initiative: 10 })]);
+        const panel = client(scene, "GM", "gm");
+        const background = client(scene, "GM", "gm");
+        const alice = client(scene, "PLAYER", "alice");
+        const stop = startTurnEndSync(background.port, background.store);
+        await flush();
+        panel.store.dispose();
+        await alice.store.setTurnResources("pc", { ended: true });
+        await flush(); await flush();
+        expect(activeIds(scene)).toEqual(["npc"]);
+        expect(background.store.getState().combatants.find((combatant) => combatant.id === "npc")?.active).toBe(true);
+        stop();
+    });
     it("advances when the player ends their combatant's turn", async () => {
         const scene = room([combatant("pc", "alice", { initiative: 20, active: true }), combatant("npc", "gm", { initiative: 10 })]);
         const gm = client(scene, "GM", "gm");

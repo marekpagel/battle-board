@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 /** Where the turn bar sits on screen. */
 export type TurnBarPosition = "top-center" | "bottom-center" | "bottom-left" | "bottom-right";
 
-/** A player's own turn bar preferences, kept per device. */
+/** A viewer's own turn bar preferences, kept per device. */
 export type TurnBarPreferences = { position: TurnBarPosition; hidden: boolean };
 
 export const POSITIONS: { value: TurnBarPosition; label: string }[] = [

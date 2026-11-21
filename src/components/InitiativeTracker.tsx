@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
@@ -14,24 +14,13 @@ import { useResizeToOBR } from "../hooks/useResizeToOBR";
 import { useInitiativeState } from "../hooks/useInitiativeState";
 import { useTurns } from "../actions/useTurns";
 import { encounterStore } from "../encounter";
-import { runSavedDataMigrations } from "../settings/migrations";
-import { obrAdapter } from "../obr/obrAdapter";
-import { registerInitiativeContextMenu } from "./initiativeMenu";
-import { useRingSync } from "../hooks/useRingSync";
 import { useConcentrationNotifications } from "../hooks/useConcentrationNotifications";
-import { useHealthBars } from "../hooks/useHealthBars";
-import { useInitiativeBadges } from "../hooks/useInitiativeBadges";
-import { useElevationLabels } from "../hooks/useElevationLabels";
-import { useTurnEndSync } from "../hooks/useTurnEndSync";
-import { useTurnBarPopover } from "../turnbar/useTurnBarPopover";
-import { usePlayerIdentity } from "../turnbar/usePlayerIdentity";
 import { TurnBarControls } from "../turnbar/TurnBarControls";
 
 export function InitiativeTracker() {
     const role = useRole();
     const { rootRef, kickMeasure } = useResizeToOBR();
     const [view, setView] = useState<"tracker" | "settings">("tracker");
-    const [ready, setReady] = useState(false);
 
     // Centralized state management
     const {
@@ -49,28 +38,7 @@ export function InitiativeTracker() {
         toggleExpanded,
     } = useInitiativeState();
 
-    useRingSync(ready);
-    useElevationLabels(ready);
-    useHealthBars(ready, role);
-    useInitiativeBadges(ready, role);
-    useTurnEndSync(ready);
-    const { playerId } = usePlayerIdentity();
-    useTurnBarPopover(role, playerId, settings);
     const { checks, dismiss } = useConcentrationNotifications();
-
-    // Readiness management
-    const rafsRef = useRef<number[]>([]);
-    useEffect(() => {
-        const a = requestAnimationFrame(() => {
-            const b = requestAnimationFrame(() => setReady(true));
-            rafsRef.current.push(b);
-        });
-        rafsRef.current.push(a);
-        return () => {
-            rafsRef.current.forEach((id) => cancelAnimationFrame(id));
-            rafsRef.current = [];
-        };
-    }, []);
 
     // Turn management - now includes groups
     const { handleStart, handleEnd, handleNext, handlePrev } = useTurns();
@@ -87,14 +55,6 @@ export function InitiativeTracker() {
     const removeFromInitiative = (id: string) => {
         encounterStore.remove([id]).catch(console.error);
     };
-
-    // Initialize context menu
-    useEffect(() => registerInitiativeContextMenu(), []);
-
-    // Move data saved by older versions (GM only; the tracker mounts once per opened scene)
-    useEffect(() => {
-        runSavedDataMigrations(obrAdapter).catch(console.error);
-    }, []);
 
     return (
         <Box
@@ -221,7 +181,7 @@ export function InitiativeTracker() {
                         />
                     )
                 )}
-                {role === "PLAYER" && settings.turnBar && <TurnBarControls />}
+                {(role === "GM" || settings.turnBar) && <TurnBarControls />}
             </Box>
 
             {/* Settings View */}

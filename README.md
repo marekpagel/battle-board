@@ -326,6 +326,25 @@ Players see a streamlined view focused on essential information:
 
 <img src="https://battle-board.missinglinkdev.com/screenshots/player-interface-disabled.png" alt="Player Interface - Disabled" style="max-width: 100%; height: auto;">
 
+### Floating Turn Bars
+
+During an encounter, the DM gets a compact floating bar showing the active
+combatant and round, with **Previous**, **Next**, **End encounter**, and
+**Open tracker** controls. NPC turns also show action, bonus action, and reaction
+buttons. For group turns, the avatar arrows cycle through the active members;
+clicking the avatar centers that token on the map. Concentration reminders also
+appear in the DM bar.
+
+Use the **Turn bar** row below the main tracker to change the position or hide
+it on your device. The DM bar works independently of **Settings → Player Turn
+Bar**, which still controls whether players get their own bars.
+
+You can close the main extension panel: the background page keeps turn bars,
+map overlays, token health controls and player turn completion running while
+the scene is open. Existing installations may need the extension removed and
+re-added once so Owlbear picks up the new `background_url` in its manifest.
+Saved token stats and room settings remain in their existing metadata.
+
 ### Permission System
 The GM has granular control over what players can see:
 

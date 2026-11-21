@@ -5,7 +5,7 @@ import Switch from "@mui/material/Switch";
 import Typography from "@mui/material/Typography";
 import { POSITIONS, setPreferences, useTurnBarPreferences, type TurnBarPosition } from "./preferences";
 
-/** A player's own show/position choice for the turn bar, saved on this device. */
+/** A viewer's own show/position choice for the turn bar, saved on this device. */
 export function TurnBarControls() {
     const { position, hidden } = useTurnBarPreferences();
     return (

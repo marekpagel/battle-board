@@ -6,6 +6,7 @@
     "description": "Initiative tracker with movement overlays, health management, and advanced group controls.",
     "homepage_url": "https://github.com/MissingLinkDev/battle-board",
     "icon": "/icon.svg",
+    "background_url": "/background.html",
     "action": {
         "title": "Battle Board",
         "icon": "/icon.svg",

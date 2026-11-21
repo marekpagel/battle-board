@@ -6,6 +6,7 @@ import { makeToken } from "../test/tokens";
 import { DEFAULT_META, META_KEY } from "../components/metadata";
 import { createEncounterStore, ITEM_ADDED_CHANNEL, SCENE_META_KEY } from "./store";
 import { CONCENTRATION_CHANNEL } from "./concentration";
+import type { Item } from "@owlbear-rodeo/sdk";
 
 /** Saved data as an older version of the extension would have written it. */
 function saved(fields: Record<string, unknown> = {}) {
@@ -22,6 +23,33 @@ async function setup(tokens: ReturnType<typeof makeToken>[], sceneMetadata: Reco
 }
 
 describe("encounter store", () => {
+    it("discards a disposed scene's pending initial read when starting a new scene subscription", async () => {
+        const old = makeToken({ id: "old", metadata: saved({ active: true }) });
+        const scene = createFakeScene({ items: [old], sceneMetadata: { [SCENE_META_KEY]: { started: true, round: 9 } } });
+        const port = scene.connect();
+        let resolveOld: (items: Item[]) => void = () => {};
+        const pending = new Promise<Item[]>((resolve) => { resolveOld = resolve; });
+        const readItems = port.items.get;
+        let first = true;
+        port.items.get = (ids) => {
+            if (first) { first = false; return pending; }
+            return readItems(ids);
+        };
+        const store = createEncounterStore(port);
+        store.subscribe(() => {});
+        store.dispose();
+        expect(store.getState()).toMatchObject({ ready: false, combatants: [], started: false, round: 0 });
+        await port.items.delete(["old"]);
+        await port.items.add([makeToken({ id: "new", metadata: saved() })]);
+        await port.sceneMetadata.set({ [SCENE_META_KEY]: { started: false, round: 0 } });
+        store.subscribe(() => {});
+        await flush();
+        resolveOld([old]);
+        await flush();
+        expect(store.getState()).toMatchObject({ ready: true, started: false, round: 0 });
+        expect(store.getState().combatants.map((combatant) => combatant.id)).toEqual(["new"]);
+        store.dispose();
+    });
     describe("add", () => {
         it("gives a new token default stats and announces it to statblock extensions", async () => {
             const { store, port } = await setup([makeToken({ id: "a", name: "Goblin" })]);

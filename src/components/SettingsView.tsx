@@ -496,7 +496,7 @@ export default function SettingsView({ value, onChange, onBack, rows }: Props) {
                             }}
                         >
                             <RowShell
-                                title="Turn Bar"
+                                title="Player Turn Bar"
                                 description="Players track actions and reactions, and end their own turns."
                                 right={
                                     <Toggle

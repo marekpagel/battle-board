@@ -33,6 +33,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
+        background: 'background.html',
         elevation: 'elevation.html',
         health: 'health.html',
         groupmodal: 'groupmodal.html',
