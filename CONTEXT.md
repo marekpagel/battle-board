@@ -108,5 +108,8 @@ A circle around a combatant showing how far it can move this turn.
 **Map health bar**:
 A compact overlay below each token with saved health data, including tokens outside initiative. The GM sees an HP bar, current/max HP, and temp HP. Players see their configured PC/NPC health mode, with no overlays when the master health switch is off. Bars are local to each viewer, update while the tracker is open, and disappear when it closes.
 
+**Initiative order badge**:
+A small numbered badge at a combatant's upper-right while the encounter runs. Numbers indicate turn positions starting at 1, with group members sharing a number. The active turn has a highlighted badge. Players see badges for all visible combatants regardless of ownership or whether the player initiative list is enabled. Hidden turns do not leave gaps in player numbering. Staged groups have no badge. Badges scale with map zoom and disappear when the encounter ends or the tracker closes.
+
 **DM preview**:
 A ring visible only to the GM, toggled per combatant, independent of whose turn it is.

@@ -21,6 +21,7 @@ import { useRingSync } from "../hooks/useRingSync";
 import { useDistanceLineSync } from "../hooks/useDistanceLineSync";
 import { useConcentrationNotifications } from "../hooks/useConcentrationNotifications";
 import { useHealthBars } from "../hooks/useHealthBars";
+import { useInitiativeBadges } from "../hooks/useInitiativeBadges";
 import { useElevationLabels } from "../hooks/useElevationLabels";
 import { useTurnEndSync } from "../hooks/useTurnEndSync";
 import { useTurnBarPopover } from "../turnbar/useTurnBarPopover";
@@ -53,6 +54,7 @@ export function InitiativeTracker() {
     useDistanceLineSync(ready);
     useElevationLabels(ready);
     useHealthBars(ready, role);
+    useInitiativeBadges(ready, role);
     useTurnEndSync(ready);
     const { playerId } = usePlayerIdentity();
     useTurnBarPopover(role, playerId, settings);
